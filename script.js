@@ -110,18 +110,54 @@ const jobs = [
     }
 ];
 
+// Saved jobs from localStorage
+let savedJobs = JSON.parse(localStorage.getItem('savedJobs')) || [];
+
+// Update statistics
+function updateStats(displayedJobs = jobs) {
+    const totalJobsEl = document.getElementById('totalJobs');
+    const savedJobsEl = document.getElementById('savedJobs');
+    
+    // Animate counter
+    animateValue(totalJobsEl, parseInt(totalJobsEl.textContent) || 0, displayedJobs.length, 500);
+    animateValue(savedJobsEl, parseInt(savedJobsEl.textContent) || 0, savedJobs.length, 500);
+}
+
+// Animate number counting
+function animateValue(element, start, end, duration) {
+    const range = end - start;
+    const increment = range / (duration / 16);
+    let current = start;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            element.textContent = end;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+
 // Render jobs to the page
 function renderJobs(jobsToRender) {
     const jobListings = document.getElementById('jobListings');
     
     if (jobsToRender.length === 0) {
         jobListings.innerHTML = '<div class="no-results">No jobs found matching your criteria.</div>';
+        updateStats([]);
         return;
     }
     
-    jobListings.innerHTML = jobsToRender.map(job => `
+    jobListings.innerHTML = jobsToRender.map(job => {
+        const isSaved = savedJobs.includes(job.id);
+        return `
         <div class="job-card" data-id="${job.id}">
             <div class="job-header">
+                <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)">
+                    ${isSaved ? '❤️' : '🤍'}
+                </button>
                 <h2 class="job-title">${job.title}</h2>
                 <div class="company">${job.company}</div>
             </div>
@@ -133,17 +169,41 @@ function renderJobs(jobsToRender) {
                 </div>
                 <p class="job-description">${job.description}</p>
             </div>
-            <button class="apply-btn" onclick="applyForJob(${job.id})">Apply Now</button>
+            <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
+            <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
         </div>
-    `).join('');
+    `}).join('');
+    
+    updateStats(jobsToRender);
 }
 
-// Filter jobs based on search and type
-function filterJobs() {
+// Toggle save/favorite job
+function toggleSaveJob(jobId, event) {
+    event.stopPropagation();
+    
+    const index = savedJobs.indexOf(jobId);
+    if (index > -1) {
+        savedJobs.splice(index, 1);
+    } else {
+        savedJobs.push(jobId);
+    }
+    
+    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+    
+    // Update button
+    const btn = event.target;
+    btn.classList.toggle('saved');
+    btn.textContent = btn.classList.contains('saved') ? '❤️' : '🤍';
+    
+    updateStats(getCurrentFilteredJobs());
+}
+
+// Get currently filtered jobs
+function getCurrentFilteredJobs() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const filterType = document.getElementById('filterType').value;
     
-    const filtered = jobs.filter(job => {
+    return jobs.filter(job => {
         const matchesSearch = 
             job.title.toLowerCase().includes(searchTerm) ||
             job.company.toLowerCase().includes(searchTerm) ||
@@ -154,22 +214,145 @@ function filterJobs() {
         
         return matchesSearch && matchesType;
     });
-    
+}
+
+// Filter jobs based on search and type
+function filterJobs() {
+    const filtered = getCurrentFilteredJobs();
     renderJobs(filtered);
 }
 
+// Clear all filters
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('filterType').value = '';
+    renderJobs(jobs);
+}
+
+// Open job modal
+function openJobModal(jobId) {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+    
+    const modal = document.getElementById('jobModal');
+    const modalBody = document.getElementById('modalBody');
+    const isSaved = savedJobs.includes(jobId);
+    
+    modalBody.innerHTML = `
+        <h2 class="modal-job-title">${job.title}</h2>
+        <div class="modal-company">${job.company}</div>
+        <div class="modal-meta">
+            <span class="tag type">${job.type}</span>
+            <span class="tag location">📍 ${job.location}</span>
+            <span class="tag salary">💰 ${job.salary}</span>
+        </div>
+        <div class="modal-description">
+            <h3 style="color: #003d82; margin-bottom: 1rem;">About this Position</h3>
+            <p>${job.description}</p>
+            
+            <h3 style="color: #003d82; margin: 2rem 0 1rem;">What We're Looking For</h3>
+            <ul style="padding-left: 1.5rem; margin-bottom: 1rem;">
+                <li>Advanced degree in relevant field (Master's or PhD preferred)</li>
+                <li>Minimum 5-7 years of professional experience</li>
+                <li>Strong analytical and communication skills</li>
+                <li>Experience working in international development</li>
+                <li>Fluency in English (additional languages a plus)</li>
+            </ul>
+            
+            <h3 style="color: #003d82; margin: 2rem 0 1rem;">Benefits</h3>
+            <ul style="padding-left: 1.5rem;">
+                <li>Competitive salary and comprehensive benefits package</li>
+                <li>International work environment</li>
+                <li>Professional development opportunities</li>
+                <li>Pension and healthcare coverage</li>
+                <li>Work-life balance initiatives</li>
+            </ul>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-apply-btn" onclick="applyForJob(${jobId}, event)">Apply Now</button>
+            <button class="modal-save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveFromModal(${jobId}, event)">
+                ${isSaved ? '❤️ Saved' : '🤍 Save Job'}
+            </button>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close modal
+function closeModal() {
+    const modal = document.getElementById('jobModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+}
+
+// Toggle save from modal
+function toggleSaveFromModal(jobId, event) {
+    event.stopPropagation();
+    
+    const index = savedJobs.indexOf(jobId);
+    if (index > -1) {
+        savedJobs.splice(index, 1);
+    } else {
+        savedJobs.push(jobId);
+    }
+    
+    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+    
+    // Update modal button
+    const btn = event.target;
+    btn.classList.toggle('saved');
+    btn.textContent = btn.classList.contains('saved') ? '❤️ Saved' : '🤍 Save Job';
+    
+    // Re-render jobs to update the card save button
+    filterJobs();
+}
+
 // Apply for job function
-function applyForJob(jobId) {
+function applyForJob(jobId, event) {
+    if (event) event.stopPropagation();
+    
     const job = jobs.find(j => j.id === jobId);
     if (job) {
-        alert(`Thank you for your interest in the ${job.title} position at ${job.company}!\n\nYou will be redirected to ${job.company}'s official careers portal to complete your application.`);
+        // Show success animation
+        const btn = event ? event.target : null;
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Application Submitted!';
+            btn.style.background = '#27ae60';
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = '';
+            }, 2000);
+        }
+        
+        setTimeout(() => {
+            alert(`Thank you for your interest in the ${job.title} position at ${job.company}!\n\nYou will be redirected to ${job.company}'s official careers portal to complete your application.`);
+        }, 100);
     }
 }
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('jobModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+});
 
 // Event listeners
 document.getElementById('searchInput').addEventListener('input', filterJobs);
 document.getElementById('filterType').addEventListener('change', filterJobs);
+document.getElementById('clearFilters').addEventListener('click', clearFilters);
 
 // Initial render
 renderJobs(jobs);
-

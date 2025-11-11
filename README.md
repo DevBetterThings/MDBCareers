@@ -4,11 +4,17 @@ A professional job board featuring opportunities at Multilateral Development Ban
 
 ## Features
 
-- 🏛️ Professional, institutional design
+- 🏛️ Professional, institutional design with fun interactive elements
 - 🔍 Real-time search functionality
 - 🏷️ Filter jobs by type (Full-time, Part-time, Contract, Remote)
 - 📱 Fully responsive design
 - 🌍 12 MDB job listings from major institutions
+- ❤️ Save favorite jobs (persists in browser localStorage)
+- 💰 Special animated salary highlighting on hover
+- ✨ Smooth card animations with tilt and glow effects
+- 🎯 Interactive modal with detailed job information
+- 📊 Live statistics dashboard
+- 🎨 Playful button hover effects
 
 ## How to Run Locally
 
