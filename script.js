@@ -189,7 +189,7 @@ function renderJobs(jobsToRender) {
     jobListings.innerHTML = visibleJobs.map(job => {
         const isSaved = savedJobs.includes(job.id);
         const wasRemoved = dislikedJobs.includes(job.id);
-        const iconPath = `mdb%20icons/${job.mdbCode}.svg`;
+        const iconPath = `mdb-icons/${job.mdbCode}.svg`;
         
         // Effect badges
         const effectConfig = {
