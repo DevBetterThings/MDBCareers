@@ -113,13 +113,21 @@ const jobs = [
 // Saved jobs from localStorage
 let savedJobs = JSON.parse(localStorage.getItem('savedJobs')) || [];
 
+const STACK_PREVIEW_COUNT = 3;
+const SWIPE_THRESHOLD = 160;
+const CARD_EXIT_DURATION = 320;
+
+let filteredResults = [...jobs];
+let currentDeck = [];
+
 // Update statistics
-function updateStats(displayedJobs = jobs) {
+function updateStats(displayedJobs = currentDeck) {
     const totalJobsEl = document.getElementById('totalJobs');
     const savedJobsEl = document.getElementById('savedJobs');
+    const availableCount = Array.isArray(displayedJobs) ? displayedJobs.length : displayedJobs;
     
     // Animate counter
-    animateValue(totalJobsEl, parseInt(totalJobsEl.textContent) || 0, displayedJobs.length, 500);
+    animateValue(totalJobsEl, parseInt(totalJobsEl.textContent) || 0, availableCount, 500);
     animateValue(savedJobsEl, parseInt(savedJobsEl.textContent) || 0, savedJobs.length, 500);
 }
 
@@ -143,17 +151,96 @@ function animateValue(element, start, end, duration) {
 // Render jobs to the page
 function renderJobs(jobsToRender) {
     const jobListings = document.getElementById('jobListings');
+    if (!jobListings) return;
+
+    filteredResults = [...jobsToRender];
+    currentDeck = [...filteredResults];
     
     if (jobsToRender.length === 0) {
         jobListings.innerHTML = '<div class="no-results">No jobs found matching your criteria.</div>';
         updateStats([]);
+        refreshSaveAction();
         return;
     }
     
-    jobListings.innerHTML = jobsToRender.map(job => {
-        const isSaved = savedJobs.includes(job.id);
-        return `
-        <div class="job-card" data-id="${job.id}">
+    presentDeck();
+}
+
+function presentDeck() {
+    const jobListings = document.getElementById('jobListings');
+    if (!jobListings) return;
+
+    if (currentDeck.length === 0) {
+        jobListings.innerHTML = `
+            <div class="deck-empty">
+                <h3>You're all caught up! 🎉</h3>
+                <p>Swipe through again or tweak your filters to discover even more development opportunities.</p>
+                <button class="restart-btn" id="restartDeckBtn">Restart Deck</button>
+            </div>
+        `;
+        updateStats([]);
+        refreshSaveAction();
+
+        const restartBtn = document.getElementById('restartDeckBtn');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', resetDeck);
+        }
+        return;
+    }
+
+    const previewCards = currentDeck.slice(0, STACK_PREVIEW_COUNT);
+    const cardsMarkup = previewCards
+        .map((job, index) => createCardMarkup(job, index))
+        .reverse()
+        .join('');
+
+    jobListings.innerHTML = `
+        <div class="swipe-stage">
+            ${cardsMarkup}
+        </div>
+        <div class="swipe-actions">
+            <button class="swipe-btn swipe-btn--skip" id="skipAction">👎 Skip</button>
+            <button class="swipe-btn swipe-btn--details" id="detailsAction">ℹ️ Details</button>
+            <button class="swipe-btn swipe-btn--save" id="saveAction">💖 Save</button>
+        </div>
+    `;
+
+    updateStats(currentDeck);
+
+    const topCard = jobListings.querySelector('.job-card.is-top');
+    if (topCard) {
+        initSwipe(topCard);
+    }
+
+    const skipAction = document.getElementById('skipAction');
+    if (skipAction) {
+        skipAction.addEventListener('click', () => triggerSwipe('left'));
+    }
+
+    const detailsAction = document.getElementById('detailsAction');
+    if (detailsAction) {
+        detailsAction.addEventListener('click', handleDetailsAction);
+    }
+
+    const saveAction = document.getElementById('saveAction');
+    if (saveAction) {
+        saveAction.addEventListener('click', () => triggerSwipe('right'));
+    }
+
+    refreshSaveAction();
+}
+
+function createCardMarkup(job, index) {
+    const isSaved = savedJobs.includes(job.id);
+    const baseClasses = ['job-card'];
+    if (index === 0) {
+        baseClasses.push('is-top');
+    }
+
+    return `
+        <div class="${baseClasses.join(' ')}" data-id="${job.id}" style="--stack-index:${index}">
+            <div class="swipe-label like">Saved</div>
+            <div class="swipe-label nope">Skipped</div>
             <div class="job-header">
                 <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)">
                     ${isSaved ? '❤️' : '🤍'}
@@ -172,9 +259,189 @@ function renderJobs(jobsToRender) {
             <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
             <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
         </div>
-    `}).join('');
-    
-    updateStats(jobsToRender);
+    `;
+}
+
+function initSwipe(card) {
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    const onPointerDown = (event) => {
+        if (!card.classList.contains('is-top')) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        if (event.target.closest('button')) return;
+
+        isDragging = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        currentX = 0;
+        currentY = 0;
+
+        card.classList.add('is-dragging');
+        card.setPointerCapture(event.pointerId);
+        card.style.transition = 'none';
+    };
+
+    const onPointerMove = (event) => {
+        if (!isDragging) return;
+
+        currentX = event.clientX - startX;
+        currentY = event.clientY - startY;
+
+        const rotation = Math.max(Math.min(currentX / 12, 20), -20);
+        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotation}deg)`;
+
+        const effectiveThreshold = Math.min(window.innerWidth * 0.22, SWIPE_THRESHOLD);
+        const progress = Math.min(Math.abs(currentX) / effectiveThreshold, 1);
+        card.style.setProperty('--swipe-progress', progress.toFixed(3));
+
+        if (currentX > 0) {
+            card.classList.add('swipe-right');
+            card.classList.remove('swipe-left');
+        } else if (currentX < 0) {
+            card.classList.add('swipe-left');
+            card.classList.remove('swipe-right');
+        } else {
+            card.classList.remove('swipe-right', 'swipe-left');
+        }
+    };
+
+    const onPointerUp = (event) => {
+        if (!isDragging) return;
+
+        isDragging = false;
+        card.releasePointerCapture(event.pointerId);
+        card.classList.remove('is-dragging');
+
+        const deltaX = currentX;
+        const deltaY = currentY;
+        const effectiveThreshold = Math.min(window.innerWidth * 0.22, SWIPE_THRESHOLD);
+
+        card.classList.remove('swipe-right', 'swipe-left');
+
+        if (Math.abs(deltaX) > effectiveThreshold) {
+            finalizeSwipe(deltaX > 0 ? 'right' : 'left', deltaY, card);
+        } else {
+            resetCard(card);
+        }
+
+        card.style.removeProperty('--swipe-progress');
+    };
+
+    card.addEventListener('pointerdown', onPointerDown);
+    card.addEventListener('pointermove', onPointerMove);
+    card.addEventListener('pointerup', onPointerUp);
+    card.addEventListener('pointercancel', onPointerUp);
+}
+
+function resetCard(card) {
+    card.style.transition = 'transform 0.3s ease';
+    card.style.transform = '';
+
+    const handleTransitionEnd = () => {
+        card.style.transition = '';
+        card.removeEventListener('transitionend', handleTransitionEnd);
+    };
+
+    card.addEventListener('transitionend', handleTransitionEnd);
+}
+
+function finalizeSwipe(direction, offsetY, card) {
+    if (card.dataset.animating === 'true') return;
+
+    card.dataset.animating = 'true';
+    card.classList.add('is-leaving');
+
+    const exitX = direction === 'right' ? window.innerWidth : -window.innerWidth;
+    const exitRotation = direction === 'right' ? 32 : -32;
+
+    requestAnimationFrame(() => {
+        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
+        card.style.transform = `translate(${exitX}px, ${offsetY}px) rotate(${exitRotation}deg)`;
+        card.style.opacity = '0';
+    });
+
+    setTimeout(() => {
+        const swipedJob = currentDeck.shift();
+        if (swipedJob && direction === 'right') {
+            saveJob(swipedJob.id);
+        }
+
+        presentDeck();
+    }, CARD_EXIT_DURATION);
+}
+
+function triggerSwipe(direction) {
+    const topCard = document.querySelector('.job-card.is-top');
+    if (!topCard || topCard.dataset.animating === 'true') return;
+
+    topCard.classList.remove('swipe-right', 'swipe-left');
+    topCard.classList.add(direction === 'right' ? 'swipe-right' : 'swipe-left');
+    topCard.style.setProperty('--swipe-progress', 1);
+
+    finalizeSwipe(direction, 0, topCard);
+}
+
+function handleDetailsAction() {
+    const topJob = currentDeck[0];
+    if (topJob) {
+        openJobModal(topJob.id);
+    }
+}
+
+function saveJob(jobId) {
+    if (!savedJobs.includes(jobId)) {
+        savedJobs.push(jobId);
+        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+    }
+    refreshSaveAction();
+}
+
+function refreshSaveAction() {
+    const topJob = currentDeck[0];
+    const saveAction = document.getElementById('saveAction');
+    const skipAction = document.getElementById('skipAction');
+    const detailsAction = document.getElementById('detailsAction');
+
+    const hasCard = Boolean(topJob);
+    [saveAction, skipAction, detailsAction].forEach(button => {
+        if (button) {
+            button.disabled = !hasCard;
+        }
+    });
+
+    if (!saveAction) return;
+
+    if (!hasCard) {
+        saveAction.textContent = '💖 Save';
+        saveAction.classList.remove('is-saved');
+        return;
+    }
+
+    const isSaved = savedJobs.includes(topJob.id);
+    saveAction.textContent = isSaved ? '❤️ Saved' : '💖 Save';
+    saveAction.classList.toggle('is-saved', isSaved);
+}
+
+function syncCardSaveState(jobId) {
+    const card = document.querySelector(`.job-card[data-id="${jobId}"]`);
+    if (card) {
+        const heartBtn = card.querySelector('.save-btn');
+        if (heartBtn) {
+            const isSaved = savedJobs.includes(jobId);
+            heartBtn.classList.toggle('saved', isSaved);
+            heartBtn.textContent = isSaved ? '❤️' : '🤍';
+        }
+    }
+    refreshSaveAction();
+}
+
+function resetDeck() {
+    currentDeck = [...filteredResults];
+    presentDeck();
 }
 
 // Toggle save/favorite job
@@ -182,20 +449,25 @@ function toggleSaveJob(jobId, event) {
     event.stopPropagation();
     
     const index = savedJobs.indexOf(jobId);
+    let isSaved;
     if (index > -1) {
         savedJobs.splice(index, 1);
+        isSaved = false;
     } else {
         savedJobs.push(jobId);
+        isSaved = true;
     }
     
     localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
     
-    // Update button
-    const btn = event.target;
-    btn.classList.toggle('saved');
-    btn.textContent = btn.classList.contains('saved') ? '❤️' : '🤍';
+    const btn = event.currentTarget || event.target;
+    if (btn) {
+        btn.classList.toggle('saved', isSaved);
+        btn.textContent = isSaved ? '❤️' : '🤍';
+    }
     
-    updateStats(getCurrentFilteredJobs());
+    refreshSaveAction();
+    updateStats(currentDeck);
 }
 
 // Get currently filtered jobs
@@ -292,21 +564,25 @@ function toggleSaveFromModal(jobId, event) {
     event.stopPropagation();
     
     const index = savedJobs.indexOf(jobId);
+    let isSaved;
     if (index > -1) {
         savedJobs.splice(index, 1);
+        isSaved = false;
     } else {
         savedJobs.push(jobId);
+        isSaved = true;
     }
     
     localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
     
-    // Update modal button
-    const btn = event.target;
-    btn.classList.toggle('saved');
-    btn.textContent = btn.classList.contains('saved') ? '❤️ Saved' : '🤍 Save Job';
-    
-    // Re-render jobs to update the card save button
-    filterJobs();
+    const btn = event.currentTarget || event.target;
+    if (btn) {
+        btn.classList.toggle('saved', isSaved);
+        btn.textContent = isSaved ? '❤️ Saved' : '🤍 Save Job';
+    }
+
+    syncCardSaveState(jobId);
+    updateStats(currentDeck);
 }
 
 // Apply for job function
