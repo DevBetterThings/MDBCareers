@@ -136,7 +136,8 @@ main {
     border-color: #0a5fa5;
 }
 
-.clear-btn {
+.clear-btn,
+.reset-cards-btn {
     padding: 12px 24px;
     background: #f5f5f5;
     border: 2px solid #e0e0e0;
@@ -147,218 +148,393 @@ main {
     font-weight: 500;
 }
 
-.clear-btn:hover {
+.clear-btn:hover,
+.reset-cards-btn:hover {
     background: #003d82;
     color: white;
     border-color: #003d82;
     transform: translateY(-2px);
 }
 
-.swipe-instructions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: rgba(255, 255, 255, 0.12);
-    padding: 1.5rem 1.75rem;
-    border-radius: 16px;
+.reset-cards-btn {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
     color: white;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(6px);
-    margin-bottom: 2.5rem;
+    border-color: #27ae60;
 }
 
-.gesture-icon {
-    font-size: 2.5rem;
-    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
-}
-
-.instruction-copy h2 {
-    font-size: 1.5rem;
-    margin-bottom: 0.35rem;
-    font-weight: 600;
-}
-
-.instruction-copy p {
-    font-size: 0.95rem;
-    opacity: 0.85;
-    max-width: 520px;
+.reset-cards-btn:hover {
+    background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
+    border-color: #229954;
 }
 
 .job-listings {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 2rem;
-    min-height: 560px;
-    position: relative;
+    padding: 20px;
+    transition: all 0.3s ease;
 }
 
-.swipe-stage {
+/* Wrapper for each card - allows badge to escape while card clips MDB icon */
+.job-card-wrapper {
     position: relative;
-    width: min(100%, 420px);
-    height: 560px;
-    perspective: 1200px;
+    overflow: visible;
+    opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
 }
 
 .job-card {
     background: white;
-    border-radius: 16px;
+    border-radius: 10px;
     padding: 2rem;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.15);
-    border: 2px solid rgba(255, 255, 255, 0);
-    transition: transform 0.35s ease, opacity 0.35s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
     display: flex;
     flex-direction: column;
-    position: absolute;
-    inset: 0;
-    cursor: grab;
-    transform: translateY(calc(var(--stack-index, 0) * 14px))
-               scale(calc(1 - var(--stack-index, 0) * 0.05));
-    opacity: calc(1 - var(--stack-index, 0) * 0.18);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
     touch-action: pan-y;
     user-select: none;
-    will-change: transform;
+    -webkit-user-select: none;
+    grid-column: span 1;
+    height: 520px;
+    /* No automatic transitions - we control them in JS */
+    transition: none;
 }
 
-.swipe-stage .job-card:not(.is-top) {
-    pointer-events: none;
+/* Only add transitions for hover effects, not position */
+.job-card:hover {
+    transition: box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.job-card.is-top {
-    opacity: 1;
-    border-color: rgba(10, 95, 165, 0.18);
-    z-index: 3;
+/* Override transition for cards that are being animated out */
+.job-card.disliked-shatter,
+.job-card.liked-away,
+.job-card.swiped-left,
+.job-card.swiped-right {
+    transition: transform 0.4s ease-out, 
+                opacity 0.4s ease-out,
+                filter 0.4s ease-out !important;
 }
 
-.job-card.is-top:not(.is-dragging):hover {
-    border-color: #0a5fa5;
-    box-shadow: 0 28px 60px rgba(0, 61, 130, 0.3);
-}
-
-.job-card.is-dragging {
-    cursor: grabbing;
-    box-shadow: 0 30px 65px rgba(0, 61, 130, 0.35);
-}
-
-.job-card.is-leaving {
-    pointer-events: none;
-}
-
-.swipe-label {
+.job-card::before {
+    content: '';
     position: absolute;
-    top: 1.4rem;
-    padding: 0.45rem 0.9rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border-radius: 8px;
-    border: 2px solid;
-    opacity: 0;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    top: 50%;
+    right: -250px;
+    transform: translateY(-50%) rotate(15deg);
+    width: 650px;
+    height: 650px;
+    background-image: var(--mdb-icon);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: grayscale(100%);
 }
 
-.swipe-label.like {
-    left: 1.5rem;
-    color: #1e9e63;
-    border-color: #27ae60;
-    background: rgba(39, 174, 96, 0.1);
-    transform: rotate(-10deg);
+.job-card:hover::before {
+    opacity: 0.2;
+    right: -240px;
+    transform: translateY(-50%) rotate(12deg);
 }
 
-.swipe-label.nope {
-    right: 1.5rem;
-    color: #d94557;
-    border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
-    transform: rotate(12deg);
+.job-card > * {
+    position: relative;
+    z-index: 1;
 }
 
-.job-card.swipe-right .swipe-label.like {
-    opacity: var(--swipe-progress, 0);
-    transform: rotate(-6deg) scale(calc(1 + var(--swipe-progress, 0) * 0.1));
+.job-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 61, 130, 0.25), 
+                0 0 30px rgba(10, 95, 165, 0.3);
+    border-color: #0a5fa5;
 }
 
-.job-card.swipe-left .swipe-label.nope {
-    opacity: var(--swipe-progress, 0);
-    transform: rotate(8deg) scale(calc(1 + var(--swipe-progress, 0) * 0.1));
+@keyframes glowPulse {
+    0%, 100% {
+        box-shadow: 0 20px 40px rgba(0, 61, 130, 0.25), 
+                    0 0 30px rgba(10, 95, 165, 0.3);
+    }
+    50% {
+        box-shadow: 0 20px 40px rgba(0, 61, 130, 0.35), 
+                    0 0 40px rgba(10, 95, 165, 0.5);
+    }
 }
 
-.swipe-actions {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-    width: min(100%, 420px);
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
-.swipe-btn {
-    border: none;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.3s ease, color 0.3s ease;
+/* Staggered animation delay for job cards */
+.job-card:nth-child(1) { animation-delay: 0.1s; }
+.job-card:nth-child(2) { animation-delay: 0.2s; }
+.job-card:nth-child(3) { animation-delay: 0.3s; }
+.job-card:nth-child(4) { animation-delay: 0.4s; }
+.job-card:nth-child(5) { animation-delay: 0.5s; }
+.job-card:nth-child(6) { animation-delay: 0.6s; }
+.job-card:nth-child(7) { animation-delay: 0.7s; }
+.job-card:nth-child(8) { animation-delay: 0.8s; }
+.job-card:nth-child(9) { animation-delay: 0.9s; }
+.job-card:nth-child(10) { animation-delay: 1s; }
+.job-card:nth-child(11) { animation-delay: 1.1s; }
+.job-card:nth-child(12) { animation-delay: 1.2s; }
+
+/* Effect badges at top left corner - positioned relative to wrapper, not card */
+.effect-badge {
+    position: absolute;
+    top: -12px;
+    left: -12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    z-index: 100;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border: 3px solid white;
 }
 
-.swipe-btn--skip {
-    background: white;
-    color: #d94557;
-    border: 2px solid rgba(231, 76, 60, 0.25);
-    box-shadow: 0 16px 30px rgba(231, 76, 60, 0.15);
+.effect-emoji {
+    font-size: 2rem;
+    animation: effectPulse 2s ease-in-out infinite;
 }
 
-.swipe-btn--skip:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 40px rgba(231, 76, 60, 0.25);
+@keyframes effectPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
 }
 
-.swipe-btn--details {
-    background: white;
-    color: #003d82;
-    border: 2px solid rgba(0, 61, 130, 0.18);
-    box-shadow: 0 16px 30px rgba(0, 61, 130, 0.1);
+/* New effect - sparkling blue/cyan */
+.effect-badge.effect-new {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    animation: newGlow 2s ease-in-out infinite;
 }
 
-.swipe-btn--details:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 22px 45px rgba(0, 61, 130, 0.2);
+.effect-new {
+    border-color: #4facfe;
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.6),
+                0 0 40px rgba(79, 172, 254, 0.3);
+    animation: cardGlowNew 2s ease-in-out infinite;
 }
 
-.swipe-btn--save {
-    background: linear-gradient(135deg, #003d82 0%, #0a5fa5 100%);
+@keyframes newGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(79, 172, 254, 0.5),
+                    0 0 30px rgba(79, 172, 254, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(79, 172, 254, 0.8),
+                    0 0 50px rgba(79, 172, 254, 0.6);
+    }
+}
+
+@keyframes cardGlowNew {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 20px rgba(79, 172, 254, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 35px rgba(79, 172, 254, 0.5);
+    }
+}
+
+/* Expiring effect - urgent orange/red */
+.effect-badge.effect-expiring {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    animation: expiringGlow 1.5s ease-in-out infinite;
+}
+
+.effect-expiring {
+    border-color: #fa709a;
+    box-shadow: 0 0 20px rgba(250, 112, 154, 0.6),
+                0 0 40px rgba(250, 112, 154, 0.3);
+    animation: cardGlowExpiring 1.5s ease-in-out infinite;
+}
+
+@keyframes expiringGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(250, 112, 154, 0.5),
+                    0 0 30px rgba(250, 112, 154, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(250, 112, 154, 0.8),
+                    0 0 50px rgba(250, 112, 154, 0.6);
+    }
+}
+
+@keyframes cardGlowExpiring {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 20px rgba(250, 112, 154, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 35px rgba(250, 112, 154, 0.5);
+    }
+}
+
+/* Gem effect - purple/blue gradient */
+.effect-badge.effect-gem {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    animation: gemGlow 2.5s ease-in-out infinite;
+}
+
+.effect-gem {
+    border-color: #667eea;
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.6),
+                0 0 40px rgba(102, 126, 234, 0.3);
+    animation: cardGlowGem 2.5s ease-in-out infinite;
+}
+
+@keyframes gemGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5),
+                    0 0 30px rgba(102, 126, 234, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.8),
+                    0 0 50px rgba(102, 126, 234, 0.6);
+    }
+}
+
+@keyframes cardGlowGem {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 20px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 35px rgba(102, 126, 234, 0.5);
+    }
+}
+
+/* Hot effect - fire red/orange */
+.effect-badge.effect-hot {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    animation: hotGlow 1.2s ease-in-out infinite;
+}
+
+.effect-hot {
+    border-color: #f5576c;
+    box-shadow: 0 0 20px rgba(245, 87, 108, 0.6),
+                0 0 40px rgba(245, 87, 108, 0.3);
+    animation: cardGlowHot 1.2s ease-in-out infinite;
+}
+
+@keyframes hotGlow {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(245, 87, 108, 0.5),
+                    0 0 30px rgba(245, 87, 108, 0.4);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(245, 87, 108, 0.8),
+                    0 0 50px rgba(245, 87, 108, 0.6);
+    }
+}
+
+@keyframes cardGlowHot {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 20px rgba(245, 87, 108, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1),
+                    0 0 35px rgba(245, 87, 108, 0.5);
+    }
+}
+
+/* Card status badge */
+.card-status-badge {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 5;
+    animation: badgePulse 0.5s ease-out;
+}
+
+.card-status-badge.liked {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
     color: white;
-    box-shadow: 0 20px 45px rgba(0, 61, 130, 0.35);
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
 
-.swipe-btn--save.is-saved {
-    box-shadow: 0 26px 60px rgba(0, 61, 130, 0.45);
+.card-status-badge.disliked {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(149, 165, 166, 0.3);
 }
 
-.swipe-btn--save:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 26px 55px rgba(0, 61, 130, 0.45);
-}
-
-.swipe-btn:active {
-    transform: translateY(0);
-}
-
-.swipe-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+@keyframes badgePulse {
+    0% {
+        transform: translateX(-50%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translateX(-50%) scale(1.1);
+    }
+    100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+    }
 }
 
 .job-header {
     margin-bottom: 1rem;
     position: relative;
-    padding-right: 50px;
+    padding-top: 3rem;
+}
+
+.dislike-btn {
+    position: absolute;
+    top: -1rem;
+    right: 3.5rem;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    font-size: 1.8rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: #999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    font-weight: 300;
+}
+
+.dislike-btn:hover {
+    transform: scale(1.15) rotate(90deg);
+    border-color: #e74c3c;
+    background: #ffe5e5;
+    color: #e74c3c;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
 .save-btn {
@@ -401,34 +577,136 @@ main {
     75% { transform: scale(1.25) rotate(-5deg); }
 }
 
+/* Dislike/Shatter Animation */
+@keyframes shatter {
+    0% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+    30% {
+        transform: scale(0.95) rotate(-5deg);
+    }
+    60% {
+        opacity: 0.7;
+        transform: scale(0.85) rotate(5deg);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.5) rotate(15deg);
+        filter: blur(5px);
+    }
+}
+
+.disliked-shatter {
+    animation: shatter 0.6s ease-out forwards;
+    pointer-events: none;
+}
+
+/* Like flash animation */
+@keyframes likeFlash {
+    0% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(231, 76, 60, 0.8),
+                    0 0 60px rgba(231, 76, 60, 0.4);
+        border-color: #e74c3c;
+    }
+    100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.liked-flash {
+    animation: likeFlash 0.6s ease-out;
+}
+
+/* Liked and removed animation */
+.liked-away {
+    animation: likeAway 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes likeAway {
+    to {
+        transform: translateY(-30px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+/* Swipe animations */
+.swiped-right {
+    animation: swipeRight 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+.swiped-left {
+    animation: swipeLeft 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes swipeRight {
+    to {
+        transform: translateX(150%) rotate(25deg);
+        opacity: 0;
+    }
+}
+
+@keyframes swipeLeft {
+    to {
+        transform: translateX(-150%) rotate(-25deg);
+        opacity: 0;
+    }
+}
+
+/* Swipe hints */
+.swipe-right-hint {
+    border-color: rgba(39, 174, 96, 0.5) !important;
+    box-shadow: 0 0 30px rgba(39, 174, 96, 0.4) !important;
+}
+
+.swipe-left-hint {
+    border-color: rgba(231, 76, 60, 0.5) !important;
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.4) !important;
+}
+
 .job-title {
     font-size: 1.5rem;
     color: #003d82;
     margin-bottom: 0.5rem;
-    font-weight: 600;
+    font-weight: 700;
     transition: all 0.3s;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9),
+                 0 0 10px rgba(255, 255, 255, 0.7),
+                 0 0 20px rgba(255, 255, 255, 0.5);
+    line-height: 1.3;
+    width: 100%;
 }
 
-.job-card.is-top:hover .job-title {
+.job-card:hover .job-title {
     color: #0a5fa5;
-    transform: translateX(5px);
 }
 
 .company {
     font-size: 1.1rem;
-    color: #555;
-    font-weight: 600;
+    color: #444;
+    font-weight: 700;
     transition: all 0.3s;
+    text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9),
+                 0 0 8px rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.5rem;
 }
 
-.job-card.is-top:hover .company {
+.job-card:hover .company {
     color: #003d82;
-    transform: translateX(5px);
 }
 
 .job-details {
-    margin: 1rem 0;
-    flex-grow: 1;
+    margin-bottom: 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .job-meta {
@@ -436,16 +714,19 @@ main {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    margin-top: -0.3rem;
 }
 
 .tag {
-    background: #f0f0f0;
+    background: rgba(255, 255, 255, 0.95);
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
     font-size: 0.85rem;
     color: #666;
     transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     position: relative;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
 }
 
 .tag.type {
@@ -474,12 +755,12 @@ main {
     transition: all 0.4s;
 }
 
-.job-card.is-top:hover .tag.salary {
+.job-card:hover .tag.salary {
     transform: scale(1.15) translateY(-3px);
     animation: salaryGlow 2s ease-in-out infinite;
 }
 
-.job-card.is-top:hover .tag.salary::before {
+.job-card:hover .tag.salary::before {
     left: 8px;
     opacity: 1;
 }
@@ -496,22 +777,32 @@ main {
     }
 }
 
-.job-card.is-top:hover .tag.type {
+.job-card:hover .tag.type {
     transform: translateX(-3px) rotate(-2deg);
 }
 
-.job-card.is-top:hover .tag.location {
+.job-card:hover .tag.location {
     transform: translateX(3px) rotate(2deg);
 }
 
 .job-description {
-    color: #666;
+    color: #333;
     margin-bottom: 1rem;
     line-height: 1.6;
     transition: all 0.3s;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8),
+                 0 0 8px rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    max-height: 4.8rem;
 }
 
-.job-card.is-top:hover .job-description {
+.job-card:hover .job-description {
     color: #444;
 }
 
@@ -554,7 +845,7 @@ main {
 .view-details-btn {
     width: 100%;
     padding: 12px;
-    background: transparent;
+    background: white;
     color: #003d82;
     border: 2px solid #003d82;
     border-radius: 8px;
@@ -566,6 +857,7 @@ main {
     margin-bottom: 0.5rem;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 61, 130, 0.1);
 }
 
 .view-details-btn::before {
@@ -590,11 +882,34 @@ main {
 .view-details-btn:hover {
     color: white;
     transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 61, 130, 0.2);
 }
 
 .view-details-btn span {
     position: relative;
     z-index: 1;
+}
+
+.apply-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    position: relative;
+    overflow: hidden;
+    margin-top: auto;
+}
+
+.apply-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+    background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
 }
 
 .no-results {
@@ -604,42 +919,6 @@ main {
     padding: 3rem;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
-}
-
-.deck-empty {
-    text-align: center;
-    color: white;
-    padding: 3rem 2rem;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.deck-empty p {
-    max-width: 360px;
-    line-height: 1.5;
-}
-
-.deck-empty .restart-btn {
-    padding: 0.9rem 1.6rem;
-    border-radius: 999px;
-    border: none;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    background: white;
-    color: #003d82;
-    box-shadow: 0 15px 35px rgba(255, 255, 255, 0.15);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.deck-empty .restart-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 20px 45px rgba(255, 255, 255, 0.25);
 }
 
 /* Modal Styles */
@@ -793,12 +1072,66 @@ main {
     border-color: #e74c3c;
 }
 
+/* Keyboard shortcuts hint for desktop */
+.keyboard-hints {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 61, 130, 0.95);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    display: none;
+    backdrop-filter: blur(10px);
+}
+
+.keyboard-hints.visible {
+    display: block;
+    animation: slideInFromBottom 0.5s ease-out;
+}
+
+@keyframes slideInFromBottom {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.keyboard-hints kbd {
+    background: white;
+    color: #003d82;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
+    margin: 0 0.3rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.keyboard-hints .hint-row {
+    margin: 0.3rem 0;
+}
+
 footer {
     background: rgba(0, 0, 0, 0.2);
     color: white;
     text-align: center;
     padding: 2rem 0;
     margin-top: 3rem;
+}
+
+@media (min-width: 769px) {
+    /* Show keyboard hints on desktop only */
+    .keyboard-hints {
+        display: block;
+    }
 }
 
 @media (max-width: 768px) {
@@ -810,49 +1143,14 @@ footer {
         padding: 1.5rem;
     }
 
+    .job-listings {
+        grid-template-columns: 1fr;
+    }
+
     #searchInput,
     #filterType,
     .clear-btn {
         width: 100%;
-    }
-
-    .swipe-instructions {
-        flex-direction: column;
-        align-items: flex-start;
-        text-align: left;
-        gap: 0.75rem;
-        padding: 1.25rem 1.5rem;
-    }
-
-    .gesture-icon {
-        font-size: 2rem;
-    }
-
-    .instruction-copy p {
-        max-width: none;
-    }
-
-    .job-listings {
-        min-height: 480px;
-        gap: 1.5rem;
-    }
-
-    .swipe-stage {
-        height: 500px;
-    }
-
-    .job-card {
-        padding: 1.6rem;
-        border-radius: 14px;
-    }
-
-    .swipe-actions {
-        gap: 0.75rem;
-    }
-
-    .swipe-btn {
-        padding: 0.85rem 0.9rem;
-        font-size: 0.95rem;
     }
 
     .stats-bar {
@@ -875,6 +1173,51 @@ footer {
 
     .modal-actions {
         flex-direction: column;
+    }
+
+    /* Hide keyboard hints on mobile */
+    .keyboard-hints {
+        display: none !important;
+    }
+
+    /* Mobile-specific: Make swipe buttons more visible */
+    .dislike-btn,
+    .save-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 2rem;
+    }
+
+    .dislike-btn {
+        font-size: 2.2rem;
+    }
+
+    /* Add swipe instruction hint on mobile */
+    .job-card::after {
+        content: '← Swipe to dislike | Swipe to like →';
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.75rem;
+        color: rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        animation: hintFadeIn 0.5s ease-out 1s forwards;
+    }
+
+    @keyframes hintFadeIn {
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Hide hint after first interaction */
+    .job-card.swiped-right::after,
+    .job-card.swiped-left::after,
+    .job-card.disliked-shatter::after {
+        display: none;
     }
 }
 

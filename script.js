@@ -1,133 +1,158 @@
 // MDB job data
-const jobs = [
+let jobs = [
     {
         id: 1,
         title: "Senior Economist - Climate Finance",
         company: "World Bank",
+        mdbCode: "wb",
         location: "Washington, DC",
         type: "Full-time",
         salary: "$120k - $180k",
-        description: "Lead analytical work on climate finance mechanisms and policy design. Provide technical expertise to member countries on green finance strategies and contribute to flagship publications."
+        description: "Lead analytical work on climate finance mechanisms and policy design. Provide technical expertise to member countries on green finance strategies and contribute to flagship publications.",
+        effect: "new"
     },
     {
         id: 2,
         title: "Infrastructure Investment Officer",
         company: "Asian Development Bank",
+        mdbCode: "adb",
         location: "Manila, Philippines",
         type: "Full-time",
         salary: "$110k - $160k",
-        description: "Evaluate and structure infrastructure investments across Southeast Asia. Work with governments to develop sustainable transport, energy, and water projects."
+        description: "Evaluate and structure infrastructure investments across Southeast Asia. Work with governments to develop sustainable transport, energy, and water projects.",
+        effect: "expiring"
     },
     {
         id: 3,
         title: "Financial Sector Specialist",
         company: "International Monetary Fund",
+        mdbCode: "imf",
         location: "Washington, DC",
         type: "Full-time",
         salary: "$130k - $190k",
-        description: "Conduct financial sector assessments and provide policy advice to member countries. Expertise in banking regulation, financial stability, and macroprudential policy required."
+        description: "Conduct financial sector assessments and provide policy advice to member countries. Expertise in banking regulation, financial stability, and macroprudential policy required.",
+        effect: "gem"
     },
     {
         id: 4,
         title: "Gender and Development Advisor",
         company: "African Development Bank",
+        mdbCode: "afdb",
         location: "Abidjan, Côte d'Ivoire",
         type: "Full-time",
         salary: "$95k - $140k",
-        description: "Design and implement gender mainstreaming strategies across project portfolios. Provide technical assistance to regional member countries on gender-inclusive development policies."
+        description: "Design and implement gender mainstreaming strategies across project portfolios. Provide technical assistance to regional member countries on gender-inclusive development policies.",
+        effect: "hot"
     },
     {
         id: 5,
         title: "Social Development Consultant",
         company: "Inter-American Development Bank",
+        mdbCode: "idb",
         location: "Remote",
         type: "Contract",
         salary: "$85k - $120k",
-        description: "Support the design and monitoring of social inclusion programs in Latin America. Experience in education, health, or labor market interventions required."
+        description: "Support the design and monitoring of social inclusion programs in Latin America. Experience in education, health, or labor market interventions required.",
+        effect: "new"
     },
     {
         id: 6,
         title: "Environmental Safeguards Specialist",
         company: "European Bank for Reconstruction and Development",
+        mdbCode: "ebrd",
         location: "London, UK",
         type: "Full-time",
         salary: "$100k - $145k",
-        description: "Ensure compliance with environmental and social policies across investment projects. Conduct environmental due diligence and stakeholder engagement."
+        description: "Ensure compliance with environmental and social policies across investment projects. Conduct environmental due diligence and stakeholder engagement.",
+        effect: "gem"
     },
     {
         id: 7,
         title: "Private Sector Development Officer",
         company: "Islamic Development Bank",
+        mdbCode: "isdb",
         location: "Jeddah, Saudi Arabia",
         type: "Full-time",
         salary: "$105k - $155k",
-        description: "Design and implement programs to strengthen private sector competitiveness in member countries. Focus on SME development and entrepreneurship ecosystems."
+        description: "Design and implement programs to strengthen private sector competitiveness in member countries. Focus on SME development and entrepreneurship ecosystems.",
+        effect: "hot"
     },
     {
         id: 8,
         title: "Senior Data Scientist",
         company: "World Bank",
+        mdbCode: "wb",
         location: "Washington, DC",
         type: "Full-time",
         salary: "$125k - $175k",
-        description: "Apply machine learning and advanced analytics to development challenges. Build predictive models for poverty mapping, agricultural yields, and economic forecasting."
+        description: "Apply machine learning and advanced analytics to development challenges. Build predictive models for poverty mapping, agricultural yields, and economic forecasting.",
+        effect: "expiring"
     },
     {
         id: 9,
         title: "Energy Transition Specialist",
         company: "Asian Development Bank",
+        mdbCode: "adb",
         location: "Bangkok, Thailand",
         type: "Full-time",
         salary: "$100k - $150k",
-        description: "Support member countries in transitioning to renewable energy. Design technical assistance programs for policy reform, capacity building, and investment mobilization."
+        description: "Support member countries in transitioning to renewable energy. Design technical assistance programs for policy reform, capacity building, and investment mobilization.",
+        effect: "gem"
     },
     {
         id: 10,
         title: "Operations Analyst",
         company: "Inter-American Development Bank",
+        mdbCode: "idb",
         location: "Washington, DC",
         type: "Full-time",
         salary: "$75k - $110k",
-        description: "Provide analytical support to project teams across various sectors. Conduct economic and financial analysis, prepare project documentation, and monitor implementation."
+        description: "Provide analytical support to project teams across various sectors. Conduct economic and financial analysis, prepare project documentation, and monitor implementation.",
+        effect: "new"
     },
     {
         id: 11,
         title: "Country Economist",
         company: "International Monetary Fund",
+        mdbCode: "imf",
         location: "Remote",
         type: "Remote",
         salary: "$115k - $165k",
-        description: "Lead macroeconomic surveillance and policy dialogue with assigned country authorities. Prepare country reports and contribute to multilateral surveillance initiatives."
+        description: "Lead macroeconomic surveillance and policy dialogue with assigned country authorities. Prepare country reports and contribute to multilateral surveillance initiatives.",
+        effect: "hot"
     },
     {
         id: 12,
         title: "Urban Development Specialist",
         company: "African Development Bank",
+        mdbCode: "afdb",
         location: "Nairobi, Kenya",
         type: "Full-time",
         salary: "$90k - $135k",
-        description: "Design and supervise urban infrastructure and municipal development projects. Work with cities on sustainable urbanization strategies and smart city initiatives."
+        description: "Design and supervise urban infrastructure and municipal development projects. Work with cities on sustainable urbanization strategies and smart city initiatives.",
+        effect: "expiring"
     }
 ];
 
 // Saved jobs from localStorage
 let savedJobs = JSON.parse(localStorage.getItem('savedJobs')) || [];
+let dislikedJobs = JSON.parse(localStorage.getItem('dislikedJobs')) || [];
 
-const STACK_PREVIEW_COUNT = 3;
-const SWIPE_THRESHOLD = 160;
-const CARD_EXIT_DURATION = 320;
-
-let filteredResults = [...jobs];
-let currentDeck = [];
+// Touch/swipe tracking
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+let currentSwipeCard = null;
+let hasInteracted = localStorage.getItem('hasInteracted') === 'true';
 
 // Update statistics
-function updateStats(displayedJobs = currentDeck) {
+function updateStats(displayedJobs = jobs) {
     const totalJobsEl = document.getElementById('totalJobs');
     const savedJobsEl = document.getElementById('savedJobs');
-    const availableCount = Array.isArray(displayedJobs) ? displayedJobs.length : displayedJobs;
     
     // Animate counter
-    animateValue(totalJobsEl, parseInt(totalJobsEl.textContent) || 0, availableCount, 500);
+    animateValue(totalJobsEl, parseInt(totalJobsEl.textContent) || 0, displayedJobs.length, 500);
     animateValue(savedJobsEl, parseInt(savedJobsEl.textContent) || 0, savedJobs.length, 500);
 }
 
@@ -151,326 +176,234 @@ function animateValue(element, start, end, duration) {
 // Render jobs to the page
 function renderJobs(jobsToRender) {
     const jobListings = document.getElementById('jobListings');
-    if (!jobListings) return;
-
-    filteredResults = [...jobsToRender];
-    currentDeck = [...filteredResults];
     
-    if (jobsToRender.length === 0) {
+    // Filter out disliked jobs
+    const visibleJobs = jobsToRender.filter(job => !dislikedJobs.includes(job.id));
+    
+    if (visibleJobs.length === 0) {
         jobListings.innerHTML = '<div class="no-results">No jobs found matching your criteria.</div>';
         updateStats([]);
-        refreshSaveAction();
         return;
     }
     
-    presentDeck();
-}
-
-function presentDeck() {
-    const jobListings = document.getElementById('jobListings');
-    if (!jobListings) return;
-
-    if (currentDeck.length === 0) {
-        jobListings.innerHTML = `
-            <div class="deck-empty">
-                <h3>You're all caught up! 🎉</h3>
-                <p>Swipe through again or tweak your filters to discover even more development opportunities.</p>
-                <button class="restart-btn" id="restartDeckBtn">Restart Deck</button>
-            </div>
-        `;
-        updateStats([]);
-        refreshSaveAction();
-
-        const restartBtn = document.getElementById('restartDeckBtn');
-        if (restartBtn) {
-            restartBtn.addEventListener('click', resetDeck);
-        }
-        return;
-    }
-
-    const previewCards = currentDeck.slice(0, STACK_PREVIEW_COUNT);
-    const cardsMarkup = previewCards
-        .map((job, index) => createCardMarkup(job, index))
-        .reverse()
-        .join('');
-
-    jobListings.innerHTML = `
-        <div class="swipe-stage">
-            ${cardsMarkup}
-        </div>
-        <div class="swipe-actions">
-            <button class="swipe-btn swipe-btn--skip" id="skipAction">👎 Skip</button>
-            <button class="swipe-btn swipe-btn--details" id="detailsAction">ℹ️ Details</button>
-            <button class="swipe-btn swipe-btn--save" id="saveAction">💖 Save</button>
-        </div>
-    `;
-
-    updateStats(currentDeck);
-
-    const topCard = jobListings.querySelector('.job-card.is-top');
-    if (topCard) {
-        initSwipe(topCard);
-    }
-
-    const skipAction = document.getElementById('skipAction');
-    if (skipAction) {
-        skipAction.addEventListener('click', () => triggerSwipe('left'));
-    }
-
-    const detailsAction = document.getElementById('detailsAction');
-    if (detailsAction) {
-        detailsAction.addEventListener('click', handleDetailsAction);
-    }
-
-    const saveAction = document.getElementById('saveAction');
-    if (saveAction) {
-        saveAction.addEventListener('click', () => triggerSwipe('right'));
-    }
-
-    refreshSaveAction();
-}
-
-function createCardMarkup(job, index) {
-    const isSaved = savedJobs.includes(job.id);
-    const baseClasses = ['job-card'];
-    if (index === 0) {
-        baseClasses.push('is-top');
-    }
-
-    return `
-        <div class="${baseClasses.join(' ')}" data-id="${job.id}" style="--stack-index:${index}">
-            <div class="swipe-label like">Saved</div>
-            <div class="swipe-label nope">Skipped</div>
-            <div class="job-header">
-                <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)">
-                    ${isSaved ? '❤️' : '🤍'}
-                </button>
-                <h2 class="job-title">${job.title}</h2>
-                <div class="company">${job.company}</div>
-            </div>
-            <div class="job-details">
-                <div class="job-meta">
-                    <span class="tag type">${job.type}</span>
-                    <span class="tag location">📍 ${job.location}</span>
-                    <span class="tag salary">💰 ${job.salary}</span>
+    jobListings.innerHTML = visibleJobs.map(job => {
+        const isSaved = savedJobs.includes(job.id);
+        const wasRemoved = dislikedJobs.includes(job.id);
+        const iconPath = `mdb%20icons/${job.mdbCode}.svg`;
+        
+        // Effect badges
+        const effectConfig = {
+            'new': { emoji: '✨', label: 'New', class: 'effect-new' },
+            'expiring': { emoji: '⏰', label: 'Expiring Soon', class: 'effect-expiring' },
+            'gem': { emoji: '💎', label: 'Hidden Gem', class: 'effect-gem' },
+            'hot': { emoji: '🔥', label: 'Hot', class: 'effect-hot' }
+        };
+        
+        const effectInfo = effectConfig[job.effect] || null;
+        const effectBadge = effectInfo 
+            ? `<div class="effect-badge ${effectInfo.class}">
+                   <span class="effect-emoji">${effectInfo.emoji}</span>
+               </div>` 
+            : '';
+        
+        // Show status badge if card was previously removed
+        const statusBadge = wasRemoved 
+            ? `<div class="card-status-badge ${isSaved ? 'liked' : 'disliked'}">${isSaved ? '❤️ Liked' : '✕ Disliked'}</div>` 
+            : '';
+        
+        return `
+        <div class="job-card-wrapper">
+            ${effectBadge}
+            <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
+                ${statusBadge}
+                <div class="job-header">
+                    <button class="dislike-btn" onclick="dislikeJob(${job.id}, event)" title="Dislike">
+                        ✕
+                    </button>
+                    <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)" title="Like">
+                        ${isSaved ? '❤️' : '🤍'}
+                    </button>
+                    <h2 class="job-title">${job.title}</h2>
+                    <div class="company">${job.company}</div>
                 </div>
-                <p class="job-description">${job.description}</p>
+                <div class="job-details">
+                    <div class="job-meta">
+                        <span class="tag type">${job.type}</span>
+                        <span class="tag location">📍 ${job.location}</span>
+                        <span class="tag salary">💰 ${job.salary}</span>
+                    </div>
+                    <p class="job-description">${job.description}</p>
+                </div>
+                <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
+                <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
             </div>
-            <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
-            <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
         </div>
-    `;
-}
-
-function initSwipe(card) {
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    const onPointerDown = (event) => {
-        if (!card.classList.contains('is-top')) return;
-        if (event.pointerType === 'mouse' && event.button !== 0) return;
-        if (event.target.closest('button')) return;
-
-        isDragging = true;
-        startX = event.clientX;
-        startY = event.clientY;
-        currentX = 0;
-        currentY = 0;
-
-        card.classList.add('is-dragging');
-        card.setPointerCapture(event.pointerId);
-        card.style.transition = 'none';
-    };
-
-    const onPointerMove = (event) => {
-        if (!isDragging) return;
-
-        currentX = event.clientX - startX;
-        currentY = event.clientY - startY;
-
-        const rotation = Math.max(Math.min(currentX / 12, 20), -20);
-        card.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotation}deg)`;
-
-        const effectiveThreshold = Math.min(window.innerWidth * 0.22, SWIPE_THRESHOLD);
-        const progress = Math.min(Math.abs(currentX) / effectiveThreshold, 1);
-        card.style.setProperty('--swipe-progress', progress.toFixed(3));
-
-        if (currentX > 0) {
-            card.classList.add('swipe-right');
-            card.classList.remove('swipe-left');
-        } else if (currentX < 0) {
-            card.classList.add('swipe-left');
-            card.classList.remove('swipe-right');
-        } else {
-            card.classList.remove('swipe-right', 'swipe-left');
-        }
-    };
-
-    const onPointerUp = (event) => {
-        if (!isDragging) return;
-
-        isDragging = false;
-        card.releasePointerCapture(event.pointerId);
-        card.classList.remove('is-dragging');
-
-        const deltaX = currentX;
-        const deltaY = currentY;
-        const effectiveThreshold = Math.min(window.innerWidth * 0.22, SWIPE_THRESHOLD);
-
-        card.classList.remove('swipe-right', 'swipe-left');
-
-        if (Math.abs(deltaX) > effectiveThreshold) {
-            finalizeSwipe(deltaX > 0 ? 'right' : 'left', deltaY, card);
-        } else {
-            resetCard(card);
-        }
-
-        card.style.removeProperty('--swipe-progress');
-    };
-
-    card.addEventListener('pointerdown', onPointerDown);
-    card.addEventListener('pointermove', onPointerMove);
-    card.addEventListener('pointerup', onPointerUp);
-    card.addEventListener('pointercancel', onPointerUp);
-}
-
-function resetCard(card) {
-    card.style.transition = 'transform 0.3s ease';
-    card.style.transform = '';
-
-    const handleTransitionEnd = () => {
-        card.style.transition = '';
-        card.removeEventListener('transitionend', handleTransitionEnd);
-    };
-
-    card.addEventListener('transitionend', handleTransitionEnd);
-}
-
-function finalizeSwipe(direction, offsetY, card) {
-    if (card.dataset.animating === 'true') return;
-
-    card.dataset.animating = 'true';
-    card.classList.add('is-leaving');
-
-    const exitX = direction === 'right' ? window.innerWidth : -window.innerWidth;
-    const exitRotation = direction === 'right' ? 32 : -32;
-
-    requestAnimationFrame(() => {
-        card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
-        card.style.transform = `translate(${exitX}px, ${offsetY}px) rotate(${exitRotation}deg)`;
-        card.style.opacity = '0';
-    });
-
+    `}).join('');
+    
+    // Attach swipe listeners to all cards
+    attachSwipeListeners();
+    
+    // Clear animation property after initial fade-in completes to avoid conflicts
     setTimeout(() => {
-        const swipedJob = currentDeck.shift();
-        if (swipedJob && direction === 'right') {
-            saveJob(swipedJob.id);
-        }
-
-        presentDeck();
-    }, CARD_EXIT_DURATION);
+        const cards = document.querySelectorAll('.job-card');
+        cards.forEach(card => {
+            card.style.animation = 'none';
+            card.style.opacity = '1'; // Ensure cards stay visible
+            card.style.transform = 'none'; // Clear any lingering transforms
+        });
+        const wrappers = document.querySelectorAll('.job-card-wrapper');
+        wrappers.forEach(wrapper => {
+            wrapper.style.transform = 'none';
+            wrapper.style.opacity = '1';
+        });
+    }, 2000);
+    
+    updateStats(visibleJobs);
 }
 
-function triggerSwipe(direction) {
-    const topCard = document.querySelector('.job-card.is-top');
-    if (!topCard || topCard.dataset.animating === 'true') return;
-
-    topCard.classList.remove('swipe-right', 'swipe-left');
-    topCard.classList.add(direction === 'right' ? 'swipe-right' : 'swipe-left');
-    topCard.style.setProperty('--swipe-progress', 1);
-
-    finalizeSwipe(direction, 0, topCard);
-}
-
-function handleDetailsAction() {
-    const topJob = currentDeck[0];
-    if (topJob) {
-        openJobModal(topJob.id);
-    }
-}
-
-function saveJob(jobId) {
-    if (!savedJobs.includes(jobId)) {
-        savedJobs.push(jobId);
-        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-    }
-    refreshSaveAction();
-}
-
-function refreshSaveAction() {
-    const topJob = currentDeck[0];
-    const saveAction = document.getElementById('saveAction');
-    const skipAction = document.getElementById('skipAction');
-    const detailsAction = document.getElementById('detailsAction');
-
-    const hasCard = Boolean(topJob);
-    [saveAction, skipAction, detailsAction].forEach(button => {
-        if (button) {
-            button.disabled = !hasCard;
-        }
-    });
-
-    if (!saveAction) return;
-
-    if (!hasCard) {
-        saveAction.textContent = '💖 Save';
-        saveAction.classList.remove('is-saved');
-        return;
-    }
-
-    const isSaved = savedJobs.includes(topJob.id);
-    saveAction.textContent = isSaved ? '❤️ Saved' : '💖 Save';
-    saveAction.classList.toggle('is-saved', isSaved);
-}
-
-function syncCardSaveState(jobId) {
-    const card = document.querySelector(`.job-card[data-id="${jobId}"]`);
-    if (card) {
-        const heartBtn = card.querySelector('.save-btn');
-        if (heartBtn) {
-            const isSaved = savedJobs.includes(jobId);
-            heartBtn.classList.toggle('saved', isSaved);
-            heartBtn.textContent = isSaved ? '❤️' : '🤍';
-        }
-    }
-    refreshSaveAction();
-}
-
-function resetDeck() {
-    currentDeck = [...filteredResults];
-    presentDeck();
-}
-
-// Toggle save/favorite job
+// Toggle save/favorite job (like action) - now removes card
 function toggleSaveJob(jobId, event) {
     event.stopPropagation();
     
+    const card = event.target.closest('.job-card');
+    if (!card) return;
+    
     const index = savedJobs.indexOf(jobId);
-    let isSaved;
     if (index > -1) {
+        // Already saved, unsave it
         savedJobs.splice(index, 1);
-        isSaved = false;
+        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        
+        // Update button without removing card
+        const btn = event.target;
+        btn.classList.remove('saved');
+        btn.textContent = '🤍';
+        updateStats(getCurrentFilteredJobs());
     } else {
+        // Save and remove card with animation
         savedJobs.push(jobId);
-        isSaved = true;
+        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        
+        // Mark as interacted to hide hints
+        if (!hasInteracted) {
+            hasInteracted = true;
+            localStorage.setItem('hasInteracted', 'true');
+            hideAllSwipeHints();
+        }
+        
+        // Add to disliked list so it doesn't show up again
+        dislikedJobs.push(jobId);
+        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        
+        // Animate card away
+        card.classList.add('liked-away');
+        
+        setTimeout(() => {
+            removeCardSmoothly(card);
+            updateStats(getCurrentFilteredJobs());
+        }, 400);
     }
-    
-    localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-    
-    const btn = event.currentTarget || event.target;
-    if (btn) {
-        btn.classList.toggle('saved', isSaved);
-        btn.textContent = isSaved ? '❤️' : '🤍';
-    }
-    
-    refreshSaveAction();
-    updateStats(currentDeck);
 }
 
-// Get currently filtered jobs
+// Dislike/remove job with animation
+function dislikeJob(jobId, event) {
+    if (event) event.stopPropagation();
+    
+    const card = document.querySelector(`.job-card[data-id="${jobId}"]`);
+    if (!card) return;
+    
+    // Mark as interacted to hide hints
+    if (!hasInteracted) {
+        hasInteracted = true;
+        localStorage.setItem('hasInteracted', 'true');
+        hideAllSwipeHints();
+    }
+    
+    // Add shatter animation
+    card.classList.add('disliked-shatter');
+    
+    // Wait for animation to complete, then remove from DOM and update storage
+    setTimeout(() => {
+        dislikedJobs.push(jobId);
+        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        
+        // Remove from saved if it was saved
+        const savedIndex = savedJobs.indexOf(jobId);
+        if (savedIndex > -1) {
+            savedJobs.splice(savedIndex, 1);
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        }
+        
+        // Remove card smoothly
+        removeCardSmoothly(card);
+        updateStats(getCurrentFilteredJobs());
+    }, 600);
+}
+
+// Smoothly remove a card from the grid using FLIP animation
+function removeCardSmoothly(card) {
+    // Find the wrapper that contains this card
+    const wrapper = card.closest('.job-card-wrapper');
+    if (!wrapper) {
+        card.remove();
+        return;
+    }
+    
+    // Get all wrappers except the one being removed
+    const allWrappers = Array.from(document.querySelectorAll('.job-card-wrapper')).filter(w => w !== wrapper);
+    
+    // FLIP: First - Record initial positions
+    const firstPositions = new Map();
+    allWrappers.forEach(w => {
+        const rect = w.getBoundingClientRect();
+        firstPositions.set(w, { top: rect.top, left: rect.left });
+    });
+    
+    // Remove the wrapper from DOM
+    wrapper.remove();
+    
+    // Force immediate layout recalculation
+    document.body.offsetHeight;
+    
+    // FLIP: Last - Get final positions after removal
+    const remainingWrappers = document.querySelectorAll('.job-card-wrapper');
+    
+    remainingWrappers.forEach(w => {
+        if (firstPositions.has(w)) {
+            const first = firstPositions.get(w);
+            const last = w.getBoundingClientRect();
+            
+            // FLIP: Invert - Calculate the difference
+            const deltaX = first.left - last.left;
+            const deltaY = first.top - last.top;
+            
+            // Only animate if position actually changed
+            if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+                // Move wrapper back to its original position instantly (without transition)
+                w.style.transition = 'none';
+                w.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                w.style.opacity = '1'; // Ensure visible
+                
+                // Force reflow
+                w.offsetHeight;
+                
+                // FLIP: Play - Animate to final position
+                requestAnimationFrame(() => {
+                    w.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    w.style.transform = 'translate(0, 0)';
+                    
+                    // Clean up this specific wrapper after animation
+                    setTimeout(() => {
+                        w.style.transition = '';
+                        w.style.transform = '';
+                    }, 550);
+                });
+            }
+        }
+    });
+}
+
+// Get currently filtered jobs (excluding disliked)
 function getCurrentFilteredJobs() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const filterType = document.getElementById('filterType').value;
@@ -483,8 +416,9 @@ function getCurrentFilteredJobs() {
             job.description.toLowerCase().includes(searchTerm);
         
         const matchesType = !filterType || job.type === filterType;
+        const notDisliked = !dislikedJobs.includes(job.id);
         
-        return matchesSearch && matchesType;
+        return matchesSearch && matchesType && notDisliked;
     });
 }
 
@@ -499,6 +433,29 @@ function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('filterType').value = '';
     renderJobs(jobs);
+}
+
+// Reset all cards - bring back removed ones with their status
+function resetAllCards() {
+    const previouslyDisliked = [...dislikedJobs];
+    
+    // Clear disliked jobs but keep saved jobs
+    dislikedJobs = [];
+    localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+    
+    // Re-render with all jobs (they'll show status badges)
+    filterJobs();
+    
+    // Show confirmation
+    const btn = document.getElementById('resetCards');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '✓ All Cards Restored!';
+    btn.style.background = '#27ae60';
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+    }, 2000);
 }
 
 // Open job modal
@@ -564,25 +521,21 @@ function toggleSaveFromModal(jobId, event) {
     event.stopPropagation();
     
     const index = savedJobs.indexOf(jobId);
-    let isSaved;
     if (index > -1) {
         savedJobs.splice(index, 1);
-        isSaved = false;
     } else {
         savedJobs.push(jobId);
-        isSaved = true;
     }
     
     localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
     
-    const btn = event.currentTarget || event.target;
-    if (btn) {
-        btn.classList.toggle('saved', isSaved);
-        btn.textContent = isSaved ? '❤️ Saved' : '🤍 Save Job';
-    }
-
-    syncCardSaveState(jobId);
-    updateStats(currentDeck);
+    // Update modal button
+    const btn = event.target;
+    btn.classList.toggle('saved');
+    btn.textContent = btn.classList.contains('saved') ? '❤️ Saved' : '🤍 Save Job';
+    
+    // Re-render jobs to update the card save button
+    filterJobs();
 }
 
 // Apply for job function
@@ -618,17 +571,181 @@ window.onclick = function(event) {
     }
 }
 
-// Close modal with Escape key
+// Keyboard shortcuts
 document.addEventListener('keydown', function(event) {
+    // Close modal with Escape key
     if (event.key === 'Escape') {
         closeModal();
+        return;
+    }
+    
+    // Don't trigger keyboard shortcuts if modal is open or user is typing
+    const modal = document.getElementById('jobModal');
+    if (modal.classList.contains('active') || 
+        event.target.tagName === 'INPUT' || 
+        event.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
+    // Get the first visible job card
+    const firstCard = document.querySelector('.job-card:not(.swiped-left):not(.swiped-right):not(.disliked-shatter)');
+    if (!firstCard) return;
+    
+    const jobId = parseInt(firstCard.dataset.id);
+    
+    // Arrow Left or 'X' key = Dislike
+    if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'x') {
+        event.preventDefault();
+        dislikeJob(jobId, { stopPropagation: () => {} });
+    }
+    
+    // Arrow Right or 'L' key = Like and remove
+    if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'l') {
+        event.preventDefault();
+        if (!savedJobs.includes(jobId)) {
+            savedJobs.push(jobId);
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        }
+        dislikedJobs.push(jobId);
+        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        
+        firstCard.classList.add('liked-away');
+        setTimeout(() => {
+            removeCardSmoothly(firstCard);
+            updateStats(getCurrentFilteredJobs());
+        }, 400);
     }
 });
+
+// Swipe functionality for mobile
+function attachSwipeListeners() {
+    const cards = document.querySelectorAll('.job-card');
+    
+    cards.forEach(card => {
+        card.addEventListener('touchstart', handleTouchStart, { passive: true });
+        card.addEventListener('touchmove', handleTouchMove, { passive: false });
+        card.addEventListener('touchend', handleTouchEnd, { passive: true });
+    });
+}
+
+function handleTouchStart(e) {
+    currentSwipeCard = e.currentTarget;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+}
+
+function handleTouchMove(e) {
+    if (!currentSwipeCard) return;
+    
+    touchEndX = e.touches[0].clientX;
+    touchEndY = e.touches[0].clientY;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Only apply transform if horizontal swipe is dominant
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+        e.preventDefault(); // Prevent scrolling when swiping
+        const rotation = deltaX / 20; // Rotate based on swipe distance
+        currentSwipeCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
+        currentSwipeCard.style.transition = 'none';
+        
+        // Add visual feedback
+        if (deltaX > 50) {
+            currentSwipeCard.classList.add('swipe-right-hint');
+            currentSwipeCard.classList.remove('swipe-left-hint');
+        } else if (deltaX < -50) {
+            currentSwipeCard.classList.add('swipe-left-hint');
+            currentSwipeCard.classList.remove('swipe-right-hint');
+        } else {
+            currentSwipeCard.classList.remove('swipe-right-hint', 'swipe-left-hint');
+        }
+    }
+}
+
+function handleTouchEnd(e) {
+    if (!currentSwipeCard) return;
+    
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    
+    // Check if it's a horizontal swipe (not vertical scroll)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+        const jobId = parseInt(currentSwipeCard.dataset.id);
+        
+        // Mark as interacted to hide hints
+        if (!hasInteracted) {
+            hasInteracted = true;
+            localStorage.setItem('hasInteracted', 'true');
+            hideAllSwipeHints();
+        }
+        
+        if (deltaX > 100) {
+            // Swipe right = Like and remove
+            if (!savedJobs.includes(jobId)) {
+                savedJobs.push(jobId);
+                localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+            }
+            dislikedJobs.push(jobId);
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+            
+            currentSwipeCard.classList.add('swiped-right');
+            setTimeout(() => {
+                removeCardSmoothly(currentSwipeCard);
+                updateStats(getCurrentFilteredJobs());
+            }, 400);
+        } else if (deltaX < -100) {
+            // Swipe left = Dislike
+            dislikedJobs.push(jobId);
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+            
+            const savedIndex = savedJobs.indexOf(jobId);
+            if (savedIndex > -1) {
+                savedJobs.splice(savedIndex, 1);
+                localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+            }
+            
+            currentSwipeCard.classList.add('swiped-left');
+            setTimeout(() => {
+                removeCardSmoothly(currentSwipeCard);
+                updateStats(getCurrentFilteredJobs());
+            }, 400);
+        } else {
+            // Reset position if swipe wasn't far enough
+            resetCardPosition(currentSwipeCard);
+        }
+    } else {
+        // Reset position if it was a tap or vertical scroll
+        resetCardPosition(currentSwipeCard);
+    }
+    
+    currentSwipeCard = null;
+    touchStartX = 0;
+    touchStartY = 0;
+    touchEndX = 0;
+    touchEndY = 0;
+}
+
+function hideAllSwipeHints() {
+    const style = document.createElement('style');
+    style.textContent = '.job-card::after { display: none !important; }';
+    document.head.appendChild(style);
+}
+
+function resetCardPosition(card) {
+    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    card.style.transform = '';
+    card.classList.remove('swipe-right-hint', 'swipe-left-hint');
+    setTimeout(() => {
+        card.style.transition = '';
+    }, 300);
+}
 
 // Event listeners
 document.getElementById('searchInput').addEventListener('input', filterJobs);
 document.getElementById('filterType').addEventListener('change', filterJobs);
 document.getElementById('clearFilters').addEventListener('click', clearFilters);
+document.getElementById('resetCards').addEventListener('click', resetAllCards);
 
 // Initial render
 renderJobs(jobs);

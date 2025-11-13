@@ -40,14 +40,7 @@
                 <option value="Remote">Remote</option>
             </select>
             <button id="clearFilters" class="clear-btn">Clear Filters</button>
-        </div>
-
-        <div class="swipe-instructions">
-            <div class="gesture-icon" aria-hidden="true">👆</div>
-            <div class="instruction-copy">
-                <h2>Swipe to Review Roles</h2>
-                <p>Swipe right to save a job, left to skip it. Prefer clicks? Use the buttons beneath each card or tap "View Details" for the full description.</p>
-            </div>
+            <button id="resetCards" class="reset-cards-btn">🔄 Show All Cards</button>
         </div>
 
         <div id="jobListings" class="job-listings">
@@ -63,6 +56,13 @@
                 <!-- Modal content will be inserted here -->
             </div>
         </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Hint -->
+    <div class="keyboard-hints visible">
+        <div class="hint-row">⌨️ <strong>Keyboard Shortcuts</strong></div>
+        <div class="hint-row"><kbd>←</kbd> or <kbd>X</kbd> = Dislike</div>
+        <div class="hint-row"><kbd>→</kbd> or <kbd>L</kbd> = Like</div>
     </div>
 
     <footer>
