@@ -192,7 +192,7 @@ function renderJobs(jobsToRender) {
         return;
     }
     
-    jobListings.innerHTML = visibleJobs.map(job => {
+      jobListings.innerHTML = visibleJobs.map(job => {
         const isSaved = savedJobs.includes(job.id);
         const wasRemoved = dislikedJobs.includes(job.id);
         const iconPath = `mdb-icons/${job.mdbCode}.svg`;
@@ -217,10 +217,10 @@ function renderJobs(jobsToRender) {
             ? `<div class="card-status-badge ${isSaved ? 'liked' : 'disliked'}">${isSaved ? '❤️ Liked' : '✕ Disliked'}</div>` 
             : '';
         
-          return `
-          <div class="job-card-wrapper">
-              ${effectBadge}
-              <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
+           return `
+            <div class="job-card-wrapper">
+                <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
+                    ${effectBadge}
                   ${statusBadge}
                   <div class="job-header">
                       <button class="dislike-btn" onclick="dislikeJob(${job.id}, event)" title="Dislike">
@@ -732,17 +732,16 @@ function queueSwipeTransform() {
     swipeAnimationFrame = requestAnimationFrame(applySwipeTransform);
 }
 
-function applySwipeTransform() {
-    if (!currentSwipeCard) {
-        swipeAnimationFrame = null;
-        return;
-    }
-    
-    const rotation = swipeDeltaX / 18;
-    const opacity = Math.max(0.35, 1 - Math.abs(swipeDeltaX) / 600);
-    const target = currentSwipeWrapper || currentSwipeCard;
-    target.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
-    target.style.opacity = opacity;
+  function applySwipeTransform() {
+      if (!currentSwipeCard) {
+          swipeAnimationFrame = null;
+          return;
+      }
+      
+      const rotation = swipeDeltaX / 18;
+      const opacity = Math.max(0.35, 1 - Math.abs(swipeDeltaX) / 600);
+      currentSwipeCard.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
+      currentSwipeCard.style.opacity = opacity;
     
     if (swipeDeltaX > 50) {
         currentSwipeCard.classList.add('swipe-right-hint');
