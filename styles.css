@@ -198,9 +198,14 @@ main {
     user-select: none;
     -webkit-user-select: none;
     grid-column: span 1;
-    height: 520px;
-    /* No automatic transitions - we control them in JS */
-    transition: none;
+    min-height: clamp(420px, 60vh, 560px);
+    height: auto;
+    aspect-ratio: 3 / 4;
+    will-change: transform, opacity;
+    isolation: isolate;
+    transition: transform 0.25s ease, 
+                box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Only add transitions for hover effects, not position */
@@ -254,6 +259,17 @@ main {
     box-shadow: 0 20px 40px rgba(0, 61, 130, 0.25), 
                 0 0 30px rgba(10, 95, 165, 0.3);
     border-color: #0a5fa5;
+}
+
+.job-card.dragging {
+    cursor: grabbing;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    transition: none !important;
+}
+
+.job-card.dragging .apply-btn,
+.job-card.dragging .view-details-btn {
+    pointer-events: none;
 }
 
 @keyframes glowPulse {
@@ -1139,17 +1155,28 @@ footer {
         font-size: 2rem;
     }
 
+    .container {
+        padding: 0 16px;
+    }
+
     .search-section {
         padding: 1.5rem;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 
     .job-listings {
-        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 0 0 2.5rem;
+        scroll-snap-type: y proximity;
     }
 
     #searchInput,
     #filterType,
-    .clear-btn {
+    .clear-btn,
+    .reset-cards-btn {
         width: 100%;
     }
 
@@ -1160,6 +1187,26 @@ footer {
 
     .stat-number {
         font-size: 2rem;
+    }
+
+    .job-card-wrapper {
+        max-width: 420px;
+        width: 100%;
+        margin: 0 auto;
+        scroll-snap-align: start;
+    }
+
+    .job-card {
+        padding: 1.5rem;
+        min-height: auto;
+        aspect-ratio: 2 / 3;
+    }
+
+    .job-card::before {
+        width: 360px;
+        height: 360px;
+        right: -190px;
+        opacity: 0.1;
     }
 
     .modal-content {
@@ -1207,6 +1254,19 @@ footer {
         animation: hintFadeIn 0.5s ease-out 1s forwards;
     }
 
+    .job-title {
+        font-size: 1.35rem;
+    }
+
+    .company {
+        font-size: 1rem;
+    }
+
+    .job-description {
+        -webkit-line-clamp: 4;
+        max-height: 6.2rem;
+    }
+
     @keyframes hintFadeIn {
         to {
             opacity: 1;
@@ -1218,6 +1278,44 @@ footer {
     .job-card.swiped-left::after,
     .job-card.disliked-shatter::after {
         display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-section {
+        padding: 1.2rem;
+    }
+
+    .job-card {
+        padding: 1.25rem 1.35rem;
+        border-radius: 16px;
+    }
+
+    .job-card::before {
+        width: 280px;
+        height: 280px;
+        right: -150px;
+    }
+
+    .job-card::after {
+        font-size: 0.7rem;
+        width: 90%;
+        white-space: normal;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    .job-meta {
+        gap: 0.4rem;
+    }
+
+    .tag {
+        font-size: 0.8rem;
+    }
+
+    .apply-btn,
+    .view-details-btn {
+        font-size: 0.95rem;
     }
 }
 

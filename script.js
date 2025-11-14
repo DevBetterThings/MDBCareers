@@ -145,6 +145,11 @@ let touchEndX = 0;
 let touchEndY = 0;
 let currentSwipeCard = null;
 let hasInteracted = localStorage.getItem('hasInteracted') === 'true';
+const SWIPE_THRESHOLD = 110;
+const DRAG_ACTIVATION_DISTANCE = 12;
+let swipeDeltaX = 0;
+let isHorizontalDrag = false;
+let swipeAnimationFrame = null;
 
 // Update statistics
 function updateStats(displayedJobs = jobs) {
@@ -292,8 +297,9 @@ function toggleSaveJob(jobId, event) {
         }
         
         // Add to disliked list so it doesn't show up again
-        dislikedJobs.push(jobId);
-        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        if (pushUnique(dislikedJobs, jobId)) {
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        }
         
         // Animate card away
         card.classList.add('liked-away');
@@ -324,8 +330,9 @@ function dislikeJob(jobId, event) {
     
     // Wait for animation to complete, then remove from DOM and update storage
     setTimeout(() => {
-        dislikedJobs.push(jobId);
-        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        if (pushUnique(dislikedJobs, jobId)) {
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        }
         
         // Remove from saved if it was saved
         const savedIndex = savedJobs.indexOf(jobId);
@@ -401,6 +408,14 @@ function removeCardSmoothly(card) {
             }
         }
     });
+}
+
+function pushUnique(array, value) {
+    if (!array.includes(value)) {
+        array.push(value);
+        return true;
+    }
+    return false;
 }
 
 // Get currently filtered jobs (excluding disliked)
@@ -606,8 +621,9 @@ document.addEventListener('keydown', function(event) {
             savedJobs.push(jobId);
             localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
         }
-        dislikedJobs.push(jobId);
-        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        if (pushUnique(dislikedJobs, jobId)) {
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        }
         
         firstCard.classList.add('liked-away');
         setTimeout(() => {
@@ -625,13 +641,22 @@ function attachSwipeListeners() {
         card.addEventListener('touchstart', handleTouchStart, { passive: true });
         card.addEventListener('touchmove', handleTouchMove, { passive: false });
         card.addEventListener('touchend', handleTouchEnd, { passive: true });
+        card.addEventListener('touchcancel', handleTouchCancel, { passive: true });
     });
 }
 
 function handleTouchStart(e) {
     currentSwipeCard = e.currentTarget;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    swipeDeltaX = 0;
+    isHorizontalDrag = false;
+    cancelSwipeAnimation();
+    if (currentSwipeCard) {
+        currentSwipeCard.classList.add('dragging');
+        currentSwipeCard.style.transition = 'none';
+    }
 }
 
 function handleTouchMove(e) {
@@ -643,87 +668,144 @@ function handleTouchMove(e) {
     const deltaX = touchEndX - touchStartX;
     const deltaY = touchEndY - touchStartY;
     
-    // Only apply transform if horizontal swipe is dominant
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
-        e.preventDefault(); // Prevent scrolling when swiping
-        const rotation = deltaX / 20; // Rotate based on swipe distance
-        currentSwipeCard.style.transform = `translateX(${deltaX}px) rotate(${rotation}deg)`;
-        currentSwipeCard.style.transition = 'none';
-        
-        // Add visual feedback
-        if (deltaX > 50) {
-            currentSwipeCard.classList.add('swipe-right-hint');
-            currentSwipeCard.classList.remove('swipe-left-hint');
-        } else if (deltaX < -50) {
-            currentSwipeCard.classList.add('swipe-left-hint');
-            currentSwipeCard.classList.remove('swipe-right-hint');
+    if (!isHorizontalDrag) {
+        if (Math.abs(deltaX) > DRAG_ACTIVATION_DISTANCE && Math.abs(deltaX) > Math.abs(deltaY)) {
+            isHorizontalDrag = true;
         } else {
-            currentSwipeCard.classList.remove('swipe-right-hint', 'swipe-left-hint');
+            return;
         }
+    }
+    
+    if (isHorizontalDrag) {
+        e.preventDefault();
+        swipeDeltaX = deltaX;
+        queueSwipeTransform();
     }
 }
 
 function handleTouchEnd(e) {
     if (!currentSwipeCard) return;
     
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-    
-    // Check if it's a horizontal swipe (not vertical scroll)
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
-        const jobId = parseInt(currentSwipeCard.dataset.id);
-        
-        // Mark as interacted to hide hints
-        if (!hasInteracted) {
-            hasInteracted = true;
-            localStorage.setItem('hasInteracted', 'true');
-            hideAllSwipeHints();
-        }
-        
-        if (deltaX > 100) {
-            // Swipe right = Like and remove
-            if (!savedJobs.includes(jobId)) {
-                savedJobs.push(jobId);
-                localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-            }
-            dislikedJobs.push(jobId);
-            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
-            
-            currentSwipeCard.classList.add('swiped-right');
-            setTimeout(() => {
-                removeCardSmoothly(currentSwipeCard);
-                updateStats(getCurrentFilteredJobs());
-            }, 400);
-        } else if (deltaX < -100) {
-            // Swipe left = Dislike
-            dislikedJobs.push(jobId);
-            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
-            
-            const savedIndex = savedJobs.indexOf(jobId);
-            if (savedIndex > -1) {
-                savedJobs.splice(savedIndex, 1);
-                localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-            }
-            
-            currentSwipeCard.classList.add('swiped-left');
-            setTimeout(() => {
-                removeCardSmoothly(currentSwipeCard);
-                updateStats(getCurrentFilteredJobs());
-            }, 400);
-        } else {
-            // Reset position if swipe wasn't far enough
-            resetCardPosition(currentSwipeCard);
-        }
-    } else {
-        // Reset position if it was a tap or vertical scroll
-        resetCardPosition(currentSwipeCard);
+    if (e.changedTouches && e.changedTouches[0]) {
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
     }
     
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+    const horizontalSwipe = isHorizontalDrag && Math.abs(deltaX) > Math.abs(deltaY);
+    
+    if (horizontalSwipe && Math.abs(deltaX) > SWIPE_THRESHOLD) {
+        completeSwipe(currentSwipeCard, deltaX);
+    } else {
+        resetCardPosition(currentSwipeCard);
+        cleanupSwipeTracking();
+    }
+}
+
+function handleTouchCancel() {
+    if (!currentSwipeCard) return;
+    resetCardPosition(currentSwipeCard);
+    cleanupSwipeTracking();
+}
+
+function queueSwipeTransform() {
+    if (swipeAnimationFrame || !currentSwipeCard) return;
+    swipeAnimationFrame = requestAnimationFrame(applySwipeTransform);
+}
+
+function applySwipeTransform() {
+    if (!currentSwipeCard) {
+        swipeAnimationFrame = null;
+        return;
+    }
+    
+    const rotation = swipeDeltaX / 18;
+    const opacity = Math.max(0.35, 1 - Math.abs(swipeDeltaX) / 600);
+    currentSwipeCard.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
+    currentSwipeCard.style.opacity = opacity;
+    
+    if (swipeDeltaX > 50) {
+        currentSwipeCard.classList.add('swipe-right-hint');
+        currentSwipeCard.classList.remove('swipe-left-hint');
+    } else if (swipeDeltaX < -50) {
+        currentSwipeCard.classList.add('swipe-left-hint');
+        currentSwipeCard.classList.remove('swipe-right-hint');
+    } else {
+        currentSwipeCard.classList.remove('swipe-right-hint', 'swipe-left-hint');
+    }
+    
+    swipeAnimationFrame = null;
+}
+
+function cancelSwipeAnimation() {
+    if (swipeAnimationFrame) {
+        cancelAnimationFrame(swipeAnimationFrame);
+        swipeAnimationFrame = null;
+    }
+}
+
+function cleanupSwipeTracking() {
+    cancelSwipeAnimation();
+    if (currentSwipeCard) {
+        currentSwipeCard.classList.remove('dragging');
+    }
     currentSwipeCard = null;
     touchStartX = 0;
     touchStartY = 0;
     touchEndX = 0;
     touchEndY = 0;
+    swipeDeltaX = 0;
+    isHorizontalDrag = false;
+}
+
+function completeSwipe(card, deltaX) {
+    const jobId = parseInt(card.dataset.id);
+    if (Number.isNaN(jobId)) {
+        resetCardPosition(card);
+        cleanupSwipeTracking();
+        return;
+    }
+    
+    if (!hasInteracted) {
+        hasInteracted = true;
+        localStorage.setItem('hasInteracted', 'true');
+        hideAllSwipeHints();
+    }
+    
+    card.classList.remove('swipe-right-hint', 'swipe-left-hint');
+    card.classList.remove('dragging');
+    card.style.transition = '';
+    
+    const cardToRemove = card;
+    
+    if (deltaX > 0) {
+        if (!savedJobs.includes(jobId)) {
+            savedJobs.push(jobId);
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        }
+        if (pushUnique(dislikedJobs, jobId)) {
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        }
+        card.classList.add('swiped-right');
+    } else {
+        if (pushUnique(dislikedJobs, jobId)) {
+            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+        }
+        const savedIndex = savedJobs.indexOf(jobId);
+        if (savedIndex > -1) {
+            savedJobs.splice(savedIndex, 1);
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+        }
+        card.classList.add('swiped-left');
+    }
+    
+    cleanupSwipeTracking();
+    
+    setTimeout(() => {
+        removeCardSmoothly(cardToRemove);
+        updateStats(getCurrentFilteredJobs());
+    }, 400);
 }
 
 function hideAllSwipeHints() {
@@ -733,12 +815,13 @@ function hideAllSwipeHints() {
 }
 
 function resetCardPosition(card) {
-    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    card.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
     card.style.transform = '';
-    card.classList.remove('swipe-right-hint', 'swipe-left-hint');
+    card.style.opacity = '';
+    card.classList.remove('swipe-right-hint', 'swipe-left-hint', 'dragging');
     setTimeout(() => {
         card.style.transition = '';
-    }, 300);
+    }, 250);
 }
 
 // Event listeners
