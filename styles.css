@@ -170,16 +170,19 @@ main {
 .job-listings {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: clamp(1.5rem, 2vw, 2.25rem);
-    padding: 0;
+    gap: clamp(1.75rem, 2.5vw, 2.75rem);
+    padding: 0 0 1.5rem;
     margin-top: 1.5rem;
     align-items: stretch;
+    justify-content: center;
+    justify-items: center;
 }
 
 @media (min-width: 1100px) {
     .job-listings {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 360px));
+        justify-content: center;
+        gap: 2.5rem;
     }
 }
 
@@ -191,6 +194,9 @@ main {
     animation: fadeInUp 0.6s ease-out forwards;
     display: flex;
     height: 100%;
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
     touch-action: pan-y;
 }
 
@@ -209,9 +215,8 @@ main {
     user-select: none;
     -webkit-user-select: none;
     grid-column: span 1;
-    min-height: clamp(420px, 60vh, 560px);
+    min-height: clamp(440px, 52vh, 560px);
     height: auto;
-    aspect-ratio: 3 / 4;
     will-change: transform, opacity;
     isolation: isolate;
     transition: transform 0.25s ease, 
@@ -243,29 +248,38 @@ main {
     border-radius: inherit;
     background-image: var(--mdb-icon);
     background-repeat: no-repeat;
-    background-size: 190% auto;
-    background-position: 120% 45%;
-    opacity: 0.18;
+    background-size: 210% auto;
+    background-position: 150% 38%;
+    opacity: 0.22;
     pointer-events: none;
     z-index: 0;
     filter: grayscale(100%);
-    transition: opacity 0.4s ease, background-position 0.5s ease;
-    will-change: opacity, background-position;
+    transform: translate(12%, -4%) rotate(-6deg);
+    transform-origin: 70% 50%;
+    transition: opacity 0.4s ease, background-position 0.5s ease, transform 0.5s ease;
+    will-change: opacity, background-position, transform;
 }
 
 @media (hover: hover) {
     .job-card:hover::before,
     .job-card:focus-visible::before {
-        opacity: 0.26;
-        background-position: 110% 40%;
+        opacity: 0.3;
+        background-position: 140% 34%;
+        transform: translate(8%, -6%) rotate(-2deg);
     }
 }
 
 @media (hover: none), (pointer: coarse) {
+    .job-card::before {
+        transition: opacity 0.4s ease;
+        background-position: 150% 38%;
+        transform: translate(10%, -2%) rotate(-6deg);
+    }
     .job-card:hover::before,
     .job-card:focus-visible::before {
-        opacity: 0.18;
-        background-position: 120% 45%;
+        opacity: 0.22;
+        background-position: 150% 38%;
+        transform: translate(10%, -2%) rotate(-6deg);
     }
 }
 
@@ -287,7 +301,7 @@ main {
     transition: none !important;
 }
 
-.job-card.dragging .apply-btn,
+.job-card.dragging .decision-actions button,
 .job-card.dragging .view-details-btn {
     pointer-events: none;
 }
@@ -542,76 +556,7 @@ main {
 .job-header {
     margin-bottom: 1rem;
     position: relative;
-    padding-top: 3rem;
-}
-
-.dislike-btn {
-    position: absolute;
-    top: -1rem;
-    right: 3.5rem;
-    background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    font-size: 1.8rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    color: #999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    font-weight: 300;
-}
-
-.dislike-btn:hover {
-    transform: scale(1.15) rotate(90deg);
-    border-color: #e74c3c;
-    background: #ffe5e5;
-    color: #e74c3c;
-    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-}
-
-.save-btn {
-    position: absolute;
-    top: -1rem;
-    right: -1rem;
-    background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: all 0.3s;
-    color: #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-}
-
-.save-btn:hover {
-    transform: scale(1.15) rotate(10deg);
-    border-color: #0a5fa5;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.save-btn.saved {
-    color: #e74c3c;
-    border-color: #e74c3c;
-    animation: heartBeat 0.5s ease;
-    background: #ffe5e5;
-}
-
-@keyframes heartBeat {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    25% { transform: scale(1.3) rotate(-10deg); }
-    50% { transform: scale(1.1) rotate(5deg); }
-    75% { transform: scale(1.25) rotate(-5deg); }
+    padding-top: 0.5rem;
 }
 
 /* Dislike/Shatter Animation */
@@ -833,42 +778,6 @@ main {
     color: #444;
 }
 
-.apply-btn {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #003d82 0%, #0a5fa5 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin-top: auto;
-    position: relative;
-    overflow: hidden;
-}
-
-.apply-btn::after {
-    content: '→';
-    position: absolute;
-    right: 20px;
-    opacity: 0;
-    transition: all 0.3s;
-}
-
-.apply-btn:hover::after {
-    opacity: 1;
-    right: 15px;
-}
-
-.apply-btn:hover {
-    background: linear-gradient(135deg, #002952 0%, #084a85 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 61, 130, 0.4);
-    padding-right: 40px;
-}
-
 .view-details-btn {
     width: 100%;
     padding: 12px;
@@ -917,27 +826,81 @@ main {
     z-index: 1;
 }
 
-.apply-btn {
+.decision-actions {
     width: 100%;
-    padding: 0.9rem;
-    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-    position: relative;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
     margin-top: auto;
     margin-bottom: 0.35rem;
 }
 
-.apply-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+.decision-btn {
+    position: relative;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease, border-color 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    color: #003d82;
+}
+
+.decision-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(10, 95, 165, 0.25);
+}
+
+.decision-btn:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.decision-btn.pass-btn {
+    background: rgba(231, 76, 60, 0.08);
+    border-color: rgba(231, 76, 60, 0.35);
+    color: #a93226;
+}
+
+.decision-btn.save-btn {
+    background: rgba(39, 174, 96, 0.08);
+    border-color: rgba(39, 174, 96, 0.35);
+    color: #1f7a44;
+}
+
+.decision-btn.pass-btn:hover,
+.decision-btn.pass-btn:focus-visible,
+.decision-btn.pass-btn.is-triggered {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5b7b1 100%);
+    color: #7b241c;
+    border-color: #e74c3c;
+    box-shadow: 0 12px 24px rgba(231, 76, 60, 0.35);
+    transform: translateY(-1px);
+}
+
+.decision-btn.save-btn:hover,
+.decision-btn.save-btn:focus-visible,
+.decision-btn.save-btn.is-triggered {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border-color: #1e8449;
+    box-shadow: 0 12px 24px rgba(39, 174, 96, 0.35);
+    transform: translateY(-1px);
+}
+
+.decision-btn--inactive {
+    opacity: 0.55;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.decision-btn.save-btn.saved {
     background: linear-gradient(135deg, #229954 0%, #27ae60 100%);
+    color: white;
+    border-color: #1e8449;
 }
 
 .no-results {
@@ -1221,13 +1184,13 @@ footer {
     .job-card {
         padding: 1.5rem;
         min-height: auto;
-        aspect-ratio: 2 / 3;
     }
 
     .job-card::before {
-        background-size: 220% auto;
-        background-position: 135% 50%;
-        opacity: 0.22;
+        background-size: 240% auto;
+        background-position: 165% 50%;
+        opacity: 0.25;
+        transform: translate(14%, -2%) rotate(-4deg);
     }
 
     .modal-content {
@@ -1248,16 +1211,13 @@ footer {
         display: none !important;
     }
 
-    /* Mobile-specific: Make swipe buttons more visible */
-    .dislike-btn,
-    .save-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 2rem;
+    .decision-actions {
+        gap: 0.65rem;
     }
 
-    .dislike-btn {
-        font-size: 2.2rem;
+    .decision-btn {
+        font-size: 0.95rem;
+        padding: 0.85rem 0.75rem;
     }
 
     .swipe-hint {
@@ -1321,7 +1281,7 @@ footer {
         font-size: 0.8rem;
     }
 
-    .apply-btn,
+    .decision-btn,
     .view-details-btn {
         font-size: 0.95rem;
     }
