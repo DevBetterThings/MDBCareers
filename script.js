@@ -145,6 +145,7 @@ let touchEndX = 0;
 let touchEndY = 0;
 let currentSwipeCard = null;
 let currentSwipeWrapper = null;
+let currentSwipeShell = null;
 let hasInteracted = localStorage.getItem('hasInteracted') === 'true';
 const SWIPE_THRESHOLD = 110;
 const DRAG_ACTIVATION_DISTANCE = 12;
@@ -218,32 +219,34 @@ function renderJobs(jobsToRender) {
             ? `<div class="card-status-badge ${isSaved ? 'liked' : 'disliked'}">${isSaved ? '❤️ Liked' : '✕ Disliked'}</div>` 
             : '';
         
-            return `
-             <div class="job-card-wrapper">
+        return `
+         <div class="job-card-wrapper">
+             <div class="job-card-shell">
+                 ${effectBadge}
                  <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
-                     ${effectBadge}
-                   ${statusBadge}
-                   <div class="job-header">
-                       <h2 class="job-title">${job.title}</h2>
-                       <div class="company">${job.company}</div>
-                   </div>
-                   <div class="job-details">
-                       <div class="job-meta">
-                           <span class="tag type">${job.type}</span>
-                           <span class="tag location">📍 ${job.location}</span>
-                           <span class="tag salary">💰 ${job.salary}</span>
-                       </div>
-                       <p class="job-description">${job.description}</p>
-                   </div>
-                   <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
-                   <div class="decision-actions" role="group" aria-label="Card decision actions">
-                       <button type="button" class="decision-btn pass-btn" onclick="handlePassClick(${job.id}, event)">Pass</button>
-                       <button type="button" class="decision-btn save-btn ${isSaved ? 'saved' : ''}" onclick="handleSaveClick(${job.id}, event)">${isSaved ? 'Saved' : 'Save'}</button>
-                   </div>
-                   <p class="swipe-hint" aria-hidden="true">← Pass or swipe left · Swipe right or Save →</p>
-               </div>
-           </div>
-       `}).join('');
+                    ${statusBadge}
+                    <div class="job-header">
+                        <h2 class="job-title">${job.title}</h2>
+                        <div class="company">${job.company}</div>
+                    </div>
+                    <div class="job-details">
+                        <div class="job-meta">
+                            <span class="tag type">${job.type}</span>
+                            <span class="tag location">📍 ${job.location}</span>
+                            <span class="tag salary">💰 ${job.salary}</span>
+                        </div>
+                        <p class="job-description">${job.description}</p>
+                    </div>
+                    <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
+                    <div class="decision-actions" role="group" aria-label="Card decision actions">
+                        <button type="button" class="decision-btn pass-btn" onclick="handlePassClick(${job.id}, event)">Pass</button>
+                        <button type="button" class="decision-btn save-btn ${isSaved ? 'saved' : ''}" onclick="handleSaveClick(${job.id}, event)">${isSaved ? 'Saved' : 'Save'}</button>
+                    </div>
+                    <p class="swipe-hint" aria-hidden="true">← Pass or swipe left · Swipe right or Save →</p>
+                </div>
+            </div>
+        </div>
+    `}).join('');
     
     // Attach swipe listeners to all cards
     attachSwipeListeners();
@@ -255,6 +258,11 @@ function renderJobs(jobsToRender) {
             card.style.animation = 'none';
             card.style.opacity = '1'; // Ensure cards stay visible
             card.style.transform = 'none'; // Clear any lingering transforms
+        });
+        const shells = document.querySelectorAll('.job-card-shell');
+        shells.forEach(shell => {
+            shell.style.transform = 'none';
+            shell.style.opacity = '1';
         });
         const wrappers = document.querySelectorAll('.job-card-wrapper');
         wrappers.forEach(wrapper => {
@@ -677,10 +685,12 @@ function handleTouchStart(e) {
     if (guardTarget && guardTarget.closest(SWIPE_INTERACTIVE_GUARD)) {
         currentSwipeCard = null;
         currentSwipeWrapper = null;
+        currentSwipeShell = null;
         return;
     }
     currentSwipeCard = e.currentTarget;
     currentSwipeWrapper = currentSwipeCard ? currentSwipeCard.closest('.job-card-wrapper') : null;
+    currentSwipeShell = currentSwipeCard ? currentSwipeCard.closest('.job-card-shell') : null;
     const touch = e.touches[0];
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
@@ -690,6 +700,9 @@ function handleTouchStart(e) {
     if (currentSwipeCard) {
         currentSwipeCard.classList.add('dragging');
         currentSwipeCard.style.transition = 'none';
+    }
+    if (currentSwipeShell) {
+        currentSwipeShell.style.transition = 'none';
     }
     if (currentSwipeWrapper) {
         currentSwipeWrapper.style.transition = 'none';
@@ -758,8 +771,9 @@ function queueSwipeTransform() {
       
       const rotation = swipeDeltaX / 18;
       const opacity = Math.max(0.35, 1 - Math.abs(swipeDeltaX) / 600);
-      currentSwipeCard.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
-      currentSwipeCard.style.opacity = opacity;
+      const swipeTarget = currentSwipeShell || currentSwipeCard;
+      swipeTarget.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
+      swipeTarget.style.opacity = opacity;
     
     if (swipeDeltaX > 50) {
         currentSwipeCard.classList.add('swipe-right-hint');
@@ -789,6 +803,11 @@ function cleanupSwipeTracking() {
         currentSwipeCard.style.opacity = '';
         currentSwipeCard.style.transform = '';
     }
+    if (currentSwipeShell) {
+        currentSwipeShell.style.transition = '';
+        currentSwipeShell.style.opacity = '';
+        currentSwipeShell.style.transform = '';
+    }
     if (currentSwipeWrapper) {
         currentSwipeWrapper.style.transition = '';
         currentSwipeWrapper.style.opacity = '';
@@ -796,6 +815,7 @@ function cleanupSwipeTracking() {
     }
     currentSwipeCard = null;
     currentSwipeWrapper = null;
+    currentSwipeShell = null;
     touchStartX = 0;
     touchStartY = 0;
     touchEndX = 0;
@@ -868,10 +888,16 @@ function hideAllSwipeHints() {
 
 function resetCardPosition(card) {
     const wrapper = card.closest('.job-card-wrapper');
+    const shell = card.closest('.job-card-shell');
     if (wrapper) {
         wrapper.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
         wrapper.style.transform = '';
         wrapper.style.opacity = '';
+    }
+    if (shell) {
+        shell.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+        shell.style.transform = '';
+        shell.style.opacity = '';
     }
     card.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
     card.style.transform = '';
@@ -879,6 +905,9 @@ function resetCardPosition(card) {
     card.classList.remove('swipe-right-hint', 'swipe-left-hint', 'dragging');
     setTimeout(() => {
         card.style.transition = '';
+        if (shell) {
+            shell.style.transition = '';
+        }
         if (wrapper) {
             wrapper.style.transition = '';
         }
