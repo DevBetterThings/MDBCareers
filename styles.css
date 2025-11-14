@@ -196,7 +196,7 @@ main {
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     border: 2px solid transparent;
     touch-action: pan-y;
     user-select: none;
@@ -232,20 +232,21 @@ main {
 .job-card::before {
     content: '';
     position: absolute;
-    top: 40%;
-    right: -320px;
+    top: 45%;
+    right: -240px;
     transform: translateY(-50%) rotate(18deg);
-    width: clamp(520px, 65vw, 940px);
-    height: clamp(520px, 65vw, 940px);
+    width: clamp(360px, 42vw, 620px);
+    height: clamp(360px, 42vw, 620px);
     background-image: var(--mdb-icon);
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
-    opacity: 0.18;
+    opacity: 0.16;
     pointer-events: none;
     z-index: 0;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     filter: grayscale(100%);
+    clip-path: inset(0 round 18px);
 }
 
 .job-card:hover::before {
@@ -313,7 +314,7 @@ main {
 .job-card:nth-child(11) { animation-delay: 1.1s; }
 .job-card:nth-child(12) { animation-delay: 1.2s; }
 
-/* Effect badges at top left corner - positioned relative to wrapper, not card */
+/* Effect badges at top left corner - positioned relative to card for swipe sync */
 .effect-badge {
     position: absolute;
     top: -12px;
@@ -327,6 +328,7 @@ main {
     z-index: 100;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     border: 3px solid white;
+    pointer-events: none;
 }
 
 .effect-emoji {
@@ -1229,11 +1231,11 @@ footer {
     }
 
     .job-card::before {
-        width: 420px;
-        height: 420px;
-        right: -220px;
-        opacity: 0.12;
-        top: 45%;
+        width: clamp(480px, 95vw, 560px);
+        height: clamp(480px, 95vw, 560px);
+        right: -260px;
+        opacity: 0.2;
+        top: 52%;
     }
 
     .modal-content {
@@ -1310,9 +1312,9 @@ footer {
     }
 
     .job-card::before {
-        width: 360px;
-        height: 360px;
-        right: -190px;
+        width: clamp(420px, 125vw, 520px);
+        height: clamp(420px, 125vw, 520px);
+        right: -250px;
     }
 
     .swipe-hint {
