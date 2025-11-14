@@ -148,6 +148,7 @@ let currentSwipeWrapper = null;
 let hasInteracted = localStorage.getItem('hasInteracted') === 'true';
 const SWIPE_THRESHOLD = 110;
 const DRAG_ACTIVATION_DISTANCE = 12;
+const SWIPE_INTERACTIVE_GUARD = '.decision-actions, .decision-btn, .view-details-btn';
 let swipeDeltaX = 0;
 let isHorizontalDrag = false;
 let swipeAnimationFrame = null;
@@ -217,35 +218,32 @@ function renderJobs(jobsToRender) {
             ? `<div class="card-status-badge ${isSaved ? 'liked' : 'disliked'}">${isSaved ? '❤️ Liked' : '✕ Disliked'}</div>` 
             : '';
         
-           return `
-            <div class="job-card-wrapper">
-                <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
-                    ${effectBadge}
-                  ${statusBadge}
-                  <div class="job-header">
-                      <button class="dislike-btn" onclick="dislikeJob(${job.id}, event)" title="Dislike">
-                          ✕
-                      </button>
-                      <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)" title="Like">
-                          ${isSaved ? '❤️' : '🤍'}
-                      </button>
-                      <h2 class="job-title">${job.title}</h2>
-                      <div class="company">${job.company}</div>
-                  </div>
-                  <div class="job-details">
-                      <div class="job-meta">
-                          <span class="tag type">${job.type}</span>
-                          <span class="tag location">📍 ${job.location}</span>
-                          <span class="tag salary">💰 ${job.salary}</span>
-                      </div>
-                      <p class="job-description">${job.description}</p>
-                  </div>
-                  <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
-                  <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
-                  <p class="swipe-hint" aria-hidden="true">← Swipe left to pass · Swipe right to save →</p>
-              </div>
-          </div>
-      `}).join('');
+            return `
+             <div class="job-card-wrapper">
+                 <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
+                     ${effectBadge}
+                   ${statusBadge}
+                   <div class="job-header">
+                       <h2 class="job-title">${job.title}</h2>
+                       <div class="company">${job.company}</div>
+                   </div>
+                   <div class="job-details">
+                       <div class="job-meta">
+                           <span class="tag type">${job.type}</span>
+                           <span class="tag location">📍 ${job.location}</span>
+                           <span class="tag salary">💰 ${job.salary}</span>
+                       </div>
+                       <p class="job-description">${job.description}</p>
+                   </div>
+                   <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
+                   <div class="decision-actions" role="group" aria-label="Card decision actions">
+                       <button type="button" class="decision-btn pass-btn" onclick="handlePassClick(${job.id}, event)">Pass</button>
+                       <button type="button" class="decision-btn save-btn ${isSaved ? 'saved' : ''}" onclick="handleSaveClick(${job.id}, event)">${isSaved ? 'Saved' : 'Save'}</button>
+                   </div>
+                   <p class="swipe-hint" aria-hidden="true">← Pass or swipe left · Swipe right or Save →</p>
+               </div>
+           </div>
+       `}).join('');
     
     // Attach swipe listeners to all cards
     attachSwipeListeners();
@@ -268,53 +266,68 @@ function renderJobs(jobsToRender) {
     updateStats(visibleJobs);
 }
 
-// Toggle save/favorite job (like action) - now removes card
-function toggleSaveJob(jobId, event) {
-    event.stopPropagation();
+function handlePassClick(jobId, event) {
+    if (event) {
+        event.stopPropagation();
+        lockDecisionButtons(event.currentTarget);
+    }
+    dislikeJob(jobId);
+}
+
+function handleSaveClick(jobId, event) {
+    if (event) {
+        event.stopPropagation();
+        lockDecisionButtons(event.currentTarget);
+    }
+    saveJobAndDismiss(jobId, event);
+}
+
+function lockDecisionButtons(triggerButton) {
+    if (!triggerButton) return;
+    triggerButton.blur();
+    triggerButton.classList.add('is-triggered');
+    const actions = triggerButton.closest('.decision-actions');
+    if (!actions) return;
+    actions.classList.add('decision-actions--engaged');
+    actions.querySelectorAll('button').forEach(btn => {
+        if (btn !== triggerButton) {
+            btn.classList.add('decision-btn--inactive');
+        }
+        btn.disabled = true;
+    });
+}
+
+function saveJobAndDismiss(jobId, event) {
+    const card = event?.currentTarget?.closest('.job-card') || document.querySelector(`.job-card[data-id="${jobId}"]`);
+    if (!card) return;
+    const wrapper = card.closest('.job-card-wrapper');
     
-      const card = event.target.closest('.job-card');
-      if (!card) return;
-      const wrapper = card.closest('.job-card-wrapper');
-    
-    const index = savedJobs.indexOf(jobId);
-    if (index > -1) {
-        // Already saved, unsave it
-        savedJobs.splice(index, 1);
-        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-        
-        // Update button without removing card
-        const btn = event.target;
-        btn.classList.remove('saved');
-        btn.textContent = '🤍';
-        updateStats(getCurrentFilteredJobs());
-    } else {
-        // Save and remove card with animation
+    if (!savedJobs.includes(jobId)) {
         savedJobs.push(jobId);
         localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-        
-        // Mark as interacted to hide hints
-        if (!hasInteracted) {
-            hasInteracted = true;
-            localStorage.setItem('hasInteracted', 'true');
-            hideAllSwipeHints();
-        }
-        
-        // Add to disliked list so it doesn't show up again
-        if (pushUnique(dislikedJobs, jobId)) {
-            localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
-        }
-        
-        // Animate card away
-          card.classList.add('liked-away');
-          if (wrapper) {
-              wrapper.classList.add('liked-away');
-          }
-        
-        setTimeout(() => {
-            removeCardSmoothly(card);
-            updateStats(getCurrentFilteredJobs());
-        }, 400);
+    } else {
+        localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
     }
+    
+    if (!hasInteracted) {
+        hasInteracted = true;
+        localStorage.setItem('hasInteracted', 'true');
+        hideAllSwipeHints();
+    }
+    
+    if (pushUnique(dislikedJobs, jobId)) {
+        localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
+    }
+    
+      card.classList.add('liked-away');
+      if (wrapper) {
+          wrapper.classList.add('liked-away');
+      }
+    
+    setTimeout(() => {
+        removeCardSmoothly(card);
+        updateStats(getCurrentFilteredJobs());
+    }, 400);
 }
 
 // Dislike/remove job with animation
@@ -660,6 +673,12 @@ function attachSwipeListeners() {
 }
 
 function handleTouchStart(e) {
+    const guardTarget = e.target && e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (guardTarget && guardTarget.closest(SWIPE_INTERACTIVE_GUARD)) {
+        currentSwipeCard = null;
+        currentSwipeWrapper = null;
+        return;
+    }
     currentSwipeCard = e.currentTarget;
     currentSwipeWrapper = currentSwipeCard ? currentSwipeCard.closest('.job-card-wrapper') : null;
     const touch = e.touches[0];
