@@ -169,10 +169,12 @@ main {
 
 .job-listings {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 2rem;
-    padding: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: clamp(1.5rem, 2vw, 2.5rem);
+    padding: 0;
+    margin-top: 1.5rem;
     transition: all 0.3s ease;
+    align-items: stretch;
 }
 
 /* Wrapper for each card - allows badge to escape while card clips MDB icon */
@@ -181,6 +183,8 @@ main {
     overflow: visible;
     opacity: 0;
     animation: fadeInUp 0.6s ease-out forwards;
+    display: flex;
+    height: 100%;
 }
 
 .job-card {
@@ -222,21 +226,22 @@ main {
     transition: transform 0.4s ease-out, 
                 opacity 0.4s ease-out,
                 filter 0.4s ease-out !important;
+    pointer-events: none;
 }
 
 .job-card::before {
     content: '';
     position: absolute;
-    top: 50%;
-    right: -250px;
-    transform: translateY(-50%) rotate(15deg);
-    width: 650px;
-    height: 650px;
+    top: 40%;
+    right: -320px;
+    transform: translateY(-50%) rotate(18deg);
+    width: clamp(520px, 65vw, 940px);
+    height: clamp(520px, 65vw, 940px);
     background-image: var(--mdb-icon);
     background-repeat: no-repeat;
     background-position: center;
-    background-size: contain;
-    opacity: 0.15;
+    background-size: cover;
+    opacity: 0.18;
     pointer-events: none;
     z-index: 0;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -244,9 +249,9 @@ main {
 }
 
 .job-card:hover::before {
-    opacity: 0.2;
-    right: -240px;
-    transform: translateY(-50%) rotate(12deg);
+    opacity: 0.25;
+    right: -300px;
+    transform: translateY(-45%) rotate(14deg) scale(1.03);
 }
 
 .job-card > * {
@@ -613,9 +618,31 @@ main {
     }
 }
 
-.disliked-shatter {
+.job-card-wrapper.disliked-shatter {
     animation: shatter 0.6s ease-out forwards;
     pointer-events: none;
+}
+
+.job-card-wrapper.liked-away {
+    animation: likeAway 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+.job-card-wrapper.swiped-right {
+    animation: swipeRight 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+.job-card-wrapper.swiped-left {
+    animation: swipeLeft 0.4s ease-out forwards;
+    pointer-events: none;
+}
+
+.job-card-wrapper.disliked-shatter .job-card,
+.job-card-wrapper.liked-away .job-card,
+.job-card-wrapper.swiped-right .job-card,
+.job-card-wrapper.swiped-left .job-card {
+    animation: none !important;
 }
 
 /* Like flash animation */
@@ -638,11 +665,6 @@ main {
 }
 
 /* Liked and removed animation */
-.liked-away {
-    animation: likeAway 0.4s ease-out forwards;
-    pointer-events: none;
-}
-
 @keyframes likeAway {
     to {
         transform: translateY(-30px) scale(0.8);
@@ -651,16 +673,6 @@ main {
 }
 
 /* Swipe animations */
-.swiped-right {
-    animation: swipeRight 0.4s ease-out forwards;
-    pointer-events: none;
-}
-
-.swiped-left {
-    animation: swipeLeft 0.4s ease-out forwards;
-    pointer-events: none;
-}
-
 @keyframes swipeRight {
     to {
         transform: translateX(150%) rotate(25deg);
@@ -722,7 +734,7 @@ main {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .job-meta {
@@ -730,10 +742,13 @@ main {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 1rem;
-    margin-top: -0.3rem;
+    margin-top: 0.2rem;
+    overflow: visible;
 }
 
 .tag {
+    display: inline-flex;
+    align-items: center;
     background: rgba(255, 255, 255, 0.95);
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
@@ -920,6 +935,7 @@ main {
     position: relative;
     overflow: hidden;
     margin-top: auto;
+    margin-bottom: 0.35rem;
 }
 
 .apply-btn:hover {
@@ -1143,6 +1159,16 @@ footer {
     margin-top: 3rem;
 }
 
+.swipe-hint {
+    display: none;
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.45);
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.5rem 0.35rem;
+}
+
 @media (min-width: 769px) {
     /* Show keyboard hints on desktop only */
     .keyboard-hints {
@@ -1203,10 +1229,11 @@ footer {
     }
 
     .job-card::before {
-        width: 360px;
-        height: 360px;
-        right: -190px;
-        opacity: 0.1;
+        width: 420px;
+        height: 420px;
+        right: -220px;
+        opacity: 0.12;
+        top: 45%;
     }
 
     .modal-content {
@@ -1239,19 +1266,10 @@ footer {
         font-size: 2.2rem;
     }
 
-    /* Add swipe instruction hint on mobile */
-    .job-card::after {
-        content: '← Swipe to dislike | Swipe to like →';
-        position: absolute;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 0.75rem;
-        color: rgba(0, 0, 0, 0.3);
-        white-space: nowrap;
-        pointer-events: none;
+    .swipe-hint {
+        display: block;
         opacity: 0;
-        animation: hintFadeIn 0.5s ease-out 1s forwards;
+        animation: hintFadeIn 0.5s ease-out 0.6s forwards;
     }
 
     .job-title {
@@ -1292,19 +1310,16 @@ footer {
     }
 
     .job-card::before {
-        width: 280px;
-        height: 280px;
-        right: -150px;
+        width: 360px;
+        height: 360px;
+        right: -190px;
     }
 
-    .job-card::after {
-        font-size: 0.7rem;
-        width: 90%;
-        white-space: normal;
-        line-height: 1.4;
-        text-align: center;
+    .swipe-hint {
+        font-size: 0.72rem;
+        line-height: 1.2;
+        padding: 0.2rem 0.5rem 0.35rem;
     }
-
     .job-meta {
         gap: 0.4rem;
     }

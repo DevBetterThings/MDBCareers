@@ -144,6 +144,7 @@ let touchStartY = 0;
 let touchEndX = 0;
 let touchEndY = 0;
 let currentSwipeCard = null;
+let currentSwipeWrapper = null;
 let hasInteracted = localStorage.getItem('hasInteracted') === 'true';
 const SWIPE_THRESHOLD = 110;
 const DRAG_ACTIVATION_DISTANCE = 12;
@@ -216,34 +217,35 @@ function renderJobs(jobsToRender) {
             ? `<div class="card-status-badge ${isSaved ? 'liked' : 'disliked'}">${isSaved ? '❤️ Liked' : '✕ Disliked'}</div>` 
             : '';
         
-        return `
-        <div class="job-card-wrapper">
-            ${effectBadge}
-            <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
-                ${statusBadge}
-                <div class="job-header">
-                    <button class="dislike-btn" onclick="dislikeJob(${job.id}, event)" title="Dislike">
-                        ✕
-                    </button>
-                    <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)" title="Like">
-                        ${isSaved ? '❤️' : '🤍'}
-                    </button>
-                    <h2 class="job-title">${job.title}</h2>
-                    <div class="company">${job.company}</div>
-                </div>
-                <div class="job-details">
-                    <div class="job-meta">
-                        <span class="tag type">${job.type}</span>
-                        <span class="tag location">📍 ${job.location}</span>
-                        <span class="tag salary">💰 ${job.salary}</span>
-                    </div>
-                    <p class="job-description">${job.description}</p>
-                </div>
-                <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
-                <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
-            </div>
-        </div>
-    `}).join('');
+          return `
+          <div class="job-card-wrapper">
+              ${effectBadge}
+              <div class="job-card ${effectInfo ? effectInfo.class : ''}" data-id="${job.id}" style="--mdb-icon: url('${iconPath}')">
+                  ${statusBadge}
+                  <div class="job-header">
+                      <button class="dislike-btn" onclick="dislikeJob(${job.id}, event)" title="Dislike">
+                          ✕
+                      </button>
+                      <button class="save-btn ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob(${job.id}, event)" title="Like">
+                          ${isSaved ? '❤️' : '🤍'}
+                      </button>
+                      <h2 class="job-title">${job.title}</h2>
+                      <div class="company">${job.company}</div>
+                  </div>
+                  <div class="job-details">
+                      <div class="job-meta">
+                          <span class="tag type">${job.type}</span>
+                          <span class="tag location">📍 ${job.location}</span>
+                          <span class="tag salary">💰 ${job.salary}</span>
+                      </div>
+                      <p class="job-description">${job.description}</p>
+                  </div>
+                  <button class="view-details-btn" onclick="openJobModal(${job.id})"><span>View Details</span></button>
+                  <button class="apply-btn" onclick="applyForJob(${job.id}, event)">Quick Apply</button>
+                  <p class="swipe-hint" aria-hidden="true">← Swipe left to pass · Swipe right to save →</p>
+              </div>
+          </div>
+      `}).join('');
     
     // Attach swipe listeners to all cards
     attachSwipeListeners();
@@ -270,8 +272,9 @@ function renderJobs(jobsToRender) {
 function toggleSaveJob(jobId, event) {
     event.stopPropagation();
     
-    const card = event.target.closest('.job-card');
-    if (!card) return;
+      const card = event.target.closest('.job-card');
+      if (!card) return;
+      const wrapper = card.closest('.job-card-wrapper');
     
     const index = savedJobs.indexOf(jobId);
     if (index > -1) {
@@ -302,7 +305,10 @@ function toggleSaveJob(jobId, event) {
         }
         
         // Animate card away
-        card.classList.add('liked-away');
+          card.classList.add('liked-away');
+          if (wrapper) {
+              wrapper.classList.add('liked-away');
+          }
         
         setTimeout(() => {
             removeCardSmoothly(card);
@@ -325,8 +331,12 @@ function dislikeJob(jobId, event) {
         hideAllSwipeHints();
     }
     
-    // Add shatter animation
-    card.classList.add('disliked-shatter');
+      // Add shatter animation
+      card.classList.add('disliked-shatter');
+      const wrapper = card.closest('.job-card-wrapper');
+      if (wrapper) {
+          wrapper.classList.add('disliked-shatter');
+      }
     
     // Wait for animation to complete, then remove from DOM and update storage
     setTimeout(() => {
@@ -626,6 +636,10 @@ document.addEventListener('keydown', function(event) {
         }
         
         firstCard.classList.add('liked-away');
+        const wrapper = firstCard.closest('.job-card-wrapper');
+        if (wrapper) {
+            wrapper.classList.add('liked-away');
+        }
         setTimeout(() => {
             removeCardSmoothly(firstCard);
             updateStats(getCurrentFilteredJobs());
@@ -647,6 +661,7 @@ function attachSwipeListeners() {
 
 function handleTouchStart(e) {
     currentSwipeCard = e.currentTarget;
+    currentSwipeWrapper = currentSwipeCard ? currentSwipeCard.closest('.job-card-wrapper') : null;
     const touch = e.touches[0];
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
@@ -656,6 +671,9 @@ function handleTouchStart(e) {
     if (currentSwipeCard) {
         currentSwipeCard.classList.add('dragging');
         currentSwipeCard.style.transition = 'none';
+    }
+    if (currentSwipeWrapper) {
+        currentSwipeWrapper.style.transition = 'none';
     }
 }
 
@@ -722,8 +740,9 @@ function applySwipeTransform() {
     
     const rotation = swipeDeltaX / 18;
     const opacity = Math.max(0.35, 1 - Math.abs(swipeDeltaX) / 600);
-    currentSwipeCard.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
-    currentSwipeCard.style.opacity = opacity;
+    const target = currentSwipeWrapper || currentSwipeCard;
+    target.style.transform = `translate3d(${swipeDeltaX}px, 0, 0) rotate(${rotation}deg)`;
+    target.style.opacity = opacity;
     
     if (swipeDeltaX > 50) {
         currentSwipeCard.classList.add('swipe-right-hint');
@@ -749,8 +768,17 @@ function cleanupSwipeTracking() {
     cancelSwipeAnimation();
     if (currentSwipeCard) {
         currentSwipeCard.classList.remove('dragging');
+        currentSwipeCard.style.transition = '';
+        currentSwipeCard.style.opacity = '';
+        currentSwipeCard.style.transform = '';
+    }
+    if (currentSwipeWrapper) {
+        currentSwipeWrapper.style.transition = '';
+        currentSwipeWrapper.style.opacity = '';
+        currentSwipeWrapper.style.transform = '';
     }
     currentSwipeCard = null;
+    currentSwipeWrapper = null;
     touchStartX = 0;
     touchStartY = 0;
     touchEndX = 0;
@@ -777,7 +805,8 @@ function completeSwipe(card, deltaX) {
     card.classList.remove('dragging');
     card.style.transition = '';
     
-    const cardToRemove = card;
+      const cardToRemove = card;
+      const wrapper = card.closest('.job-card-wrapper');
     
     if (deltaX > 0) {
         if (!savedJobs.includes(jobId)) {
@@ -787,7 +816,10 @@ function completeSwipe(card, deltaX) {
         if (pushUnique(dislikedJobs, jobId)) {
             localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
         }
-        card.classList.add('swiped-right');
+          card.classList.add('swiped-right');
+          if (wrapper) {
+              wrapper.classList.add('swiped-right');
+          }
     } else {
         if (pushUnique(dislikedJobs, jobId)) {
             localStorage.setItem('dislikedJobs', JSON.stringify(dislikedJobs));
@@ -797,7 +829,10 @@ function completeSwipe(card, deltaX) {
             savedJobs.splice(savedIndex, 1);
             localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
         }
-        card.classList.add('swiped-left');
+          card.classList.add('swiped-left');
+          if (wrapper) {
+              wrapper.classList.add('swiped-left');
+          }
     }
     
     cleanupSwipeTracking();
@@ -810,17 +845,26 @@ function completeSwipe(card, deltaX) {
 
 function hideAllSwipeHints() {
     const style = document.createElement('style');
-    style.textContent = '.job-card::after { display: none !important; }';
+    style.textContent = '.swipe-hint { display: none !important; }';
     document.head.appendChild(style);
 }
 
 function resetCardPosition(card) {
+    const wrapper = card.closest('.job-card-wrapper');
+    if (wrapper) {
+        wrapper.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+        wrapper.style.transform = '';
+        wrapper.style.opacity = '';
+    }
     card.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
     card.style.transform = '';
     card.style.opacity = '';
     card.classList.remove('swipe-right-hint', 'swipe-left-hint', 'dragging');
     setTimeout(() => {
         card.style.transition = '';
+        if (wrapper) {
+            wrapper.style.transition = '';
+        }
     }, 250);
 }
 
