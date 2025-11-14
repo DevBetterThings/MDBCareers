@@ -653,7 +653,7 @@ function attachSwipeListeners() {
     
     cards.forEach(card => {
         card.addEventListener('touchstart', handleTouchStart, { passive: true });
-        card.addEventListener('touchmove', handleTouchMove, { passive: false });
+        card.addEventListener('touchmove', handleTouchMove, { passive: true });
         card.addEventListener('touchend', handleTouchEnd, { passive: true });
         card.addEventListener('touchcancel', handleTouchCancel, { passive: true });
     });
@@ -695,7 +695,6 @@ function handleTouchMove(e) {
     }
     
     if (isHorizontalDrag) {
-        e.preventDefault();
         swipeDeltaX = deltaX;
         queueSwipeTransform();
     }

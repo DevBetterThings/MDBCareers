@@ -169,12 +169,18 @@ main {
 
 .job-listings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: clamp(1.5rem, 2vw, 2.5rem);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: clamp(1.5rem, 2vw, 2.25rem);
     padding: 0;
     margin-top: 1.5rem;
-    transition: all 0.3s ease;
     align-items: stretch;
+}
+
+@media (min-width: 1100px) {
+    .job-listings {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 2rem;
+    }
 }
 
 /* Wrapper for each card - allows badge to escape while card clips MDB icon */
@@ -185,6 +191,7 @@ main {
     animation: fadeInUp 0.6s ease-out forwards;
     display: flex;
     height: 100%;
+    touch-action: pan-y;
 }
 
 .job-card {
@@ -232,27 +239,34 @@ main {
 .job-card::before {
     content: '';
     position: absolute;
-    top: 45%;
-    right: -240px;
-    transform: translateY(-50%) rotate(18deg);
-    width: clamp(360px, 42vw, 620px);
-    height: clamp(360px, 42vw, 620px);
+    inset: 0;
+    border-radius: inherit;
     background-image: var(--mdb-icon);
     background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
-    opacity: 0.16;
+    background-size: 190% auto;
+    background-position: 120% 45%;
+    opacity: 0.18;
     pointer-events: none;
     z-index: 0;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     filter: grayscale(100%);
-    clip-path: inset(0 round 18px);
+    transition: opacity 0.4s ease, background-position 0.5s ease;
+    will-change: opacity, background-position;
 }
 
-.job-card:hover::before {
-    opacity: 0.25;
-    right: -300px;
-    transform: translateY(-45%) rotate(14deg) scale(1.03);
+@media (hover: hover) {
+    .job-card:hover::before,
+    .job-card:focus-visible::before {
+        opacity: 0.26;
+        background-position: 110% 40%;
+    }
+}
+
+@media (hover: none), (pointer: coarse) {
+    .job-card:hover::before,
+    .job-card:focus-visible::before {
+        opacity: 0.18;
+        background-position: 120% 45%;
+    }
 }
 
 .job-card > * {
@@ -756,7 +770,7 @@ main {
     border-radius: 20px;
     font-size: 0.85rem;
     color: #666;
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    transition: box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease;
     position: relative;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     font-weight: 600;
@@ -780,22 +794,9 @@ main {
     overflow: hidden;
 }
 
-.tag.salary::before {
-    content: '💰';
-    position: absolute;
-    left: -30px;
-    opacity: 0;
-    transition: all 0.4s;
-}
-
-.job-card:hover .tag.salary {
-    transform: scale(1.15) translateY(-3px);
+.job-card:hover .tag.salary,
+.job-card:focus-within .tag.salary {
     animation: salaryGlow 2s ease-in-out infinite;
-}
-
-.job-card:hover .tag.salary::before {
-    left: 8px;
-    opacity: 1;
 }
 
 @keyframes salaryGlow {
@@ -810,13 +811,6 @@ main {
     }
 }
 
-.job-card:hover .tag.type {
-    transform: translateX(-3px) rotate(-2deg);
-}
-
-.job-card:hover .tag.location {
-    transform: translateX(3px) rotate(2deg);
-}
 
 .job-description {
     color: #333;
@@ -1231,11 +1225,9 @@ footer {
     }
 
     .job-card::before {
-        width: clamp(480px, 95vw, 560px);
-        height: clamp(480px, 95vw, 560px);
-        right: -260px;
-        opacity: 0.2;
-        top: 52%;
+        background-size: 220% auto;
+        background-position: 135% 50%;
+        opacity: 0.22;
     }
 
     .modal-content {
@@ -1312,9 +1304,8 @@ footer {
     }
 
     .job-card::before {
-        width: clamp(420px, 125vw, 520px);
-        height: clamp(420px, 125vw, 520px);
-        right: -250px;
+        background-size: 250% auto;
+        background-position: 145% 52%;
     }
 
     .swipe-hint {
